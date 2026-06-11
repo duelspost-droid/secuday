@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>secuday — 정보보호의 날 자료 관리</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 onclick="showList()">🛡️ secuday</h1>
+    <span class="subtitle">매월 1일 정보보호의 날 — 보안 인식 자료 관리</span>
+    <button class="btn primary" onclick="showCreate()">+ 새 자료 등록</button>
+  </header>
+
+  <main id="main">
+    <!-- 목록 -->
+    <section id="view-list" class="view">
+      <div id="material-cards" class="cards"></div>
+      <p id="empty-msg" class="empty" hidden>등록된 자료가 없습니다. ‘새 자료 등록’으로 시작하세요.</p>
+    </section>
+
+    <!-- 등록/편집 폼 -->
+    <section id="view-form" class="view" hidden>
+      <h2 id="form-title">새 자료 등록</h2>
+      <form id="material-form" onsubmit="return submitForm(event)">
+        <div class="row">
+          <label>대상 월 <input type="month" name="month" required></label>
+          <label>테마 <input type="text" name="theme" placeholder="예: 피싱 메일 주의"></label>
+        </div>
+        <label>제목 <input type="text" name="title" required placeholder="예: 6월 정보보호의 날 — 피싱 메일, 한 번 더 의심하세요"></label>
+        <label>내용 (마크다운)
+          <textarea name="content" rows="12" placeholder="이달의 보안 인식 내용을 작성하세요"></textarea>
+        </label>
+        <label>임직원 수칙 (한 줄에 하나씩)
+          <textarea name="rules" rows="6" placeholder="발신자 주소를 반드시 확인한다&#10;출처 불명 첨부파일은 열지 않는다"></textarea>
+        </label>
+        <div class="row">
+          <label>포스터 파일 <input type="file" name="poster" accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf"></label>
+          <label>변경 메모 <input type="text" name="change_note" placeholder="버전 이력에 남길 메모"></label>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn primary">저장</button>
+          <button type="button" class="btn" onclick="cancelForm()">취소</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 상세 -->
+    <section id="view-detail" class="view" hidden>
+      <div class="detail-head">
+        <button class="btn small" onclick="showList()">← 목록</button>
+        <h2 id="detail-title"></h2>
+        <span id="detail-badge" class="badge"></span>
+        <div class="spacer"></div>
+        <button class="btn" onclick="showEdit()">✏️ 편집</button>
+        <button class="btn danger" onclick="deleteMaterial()">삭제</button>
+      </div>
+
+      <nav class="tabs">
+        <button class="tab active" data-tab="content" onclick="switchTab('content')">자료 보기</button>
+        <button class="tab" data-tab="history" onclick="switchTab('history')">버전 이력</button>
+        <button class="tab" data-tab="ai" onclick="switchTab('ai')">AI 질의</button>
+      </nav>
+
+      <div id="tab-content" class="tabpane">
+        <div class="detail-grid">
+          <div id="poster-box" class="poster-box"></div>
+          <div>
+            <h3 id="content-theme" class="theme"></h3>
+            <div id="content-body" class="content-body"></div>
+            <h3>임직원 수칙</h3>
+            <ol id="content-rules" class="rules"></ol>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-history" class="tabpane" hidden>
+        <table class="vtable">
+          <thead><tr><th>버전</th><th>제목</th><th>변경 메모</th><th>구분</th><th>일시</th><th></th></tr></thead>
+          <tbody id="version-rows"></tbody>
+        </table>
+        <div class="diff-controls">
+          비교: <select id="diff-from"></select> → <select id="diff-to"></select>
+          <button class="btn small" onclick="loadDiff()">비교하기</button>
+        </div>
+        <pre id="diff-output" class="diff" hidden></pre>
+      </div>
+
+      <div id="tab-ai" class="tabpane" hidden>
+        <p class="hint">현재 자료에 대해 질문하거나 수정을 요청하세요. AI가 수정안을 제안하면 검토 후 새 버전으로 적용할 수 있습니다.</p>
+        <div id="chat-log" class="chat-log"></div>
+        <div id="proposal-box" class="proposal" hidden>
+          <h4>📋 AI 수정안</h4>
+          <div id="proposal-preview"></div>
+          <div class="actions">
+            <button class="btn primary" onclick="applyProposal()">새 버전으로 적용</button>
+            <button class="btn" onclick="dismissProposal()">닫기</button>
+          </div>
+        </div>
+        <form class="chat-input" onsubmit="return sendAi(event)">
+          <input id="ai-message" type="text" placeholder="예: 재택근무 보안 수칙을 추가해줘 / 문구를 더 친근하게 바꿔줘" autocomplete="off">
+          <button type="submit" class="btn primary" id="ai-send">전송</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
