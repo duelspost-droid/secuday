@@ -3,124 +3,113 @@
 매월 1일 **정보보호의 날**에 임직원에게 배포하는 보안 인식 자료(포스터·안내 내용·임직원 수칙)를
 버전 관리하며 운영하는 웹 프로그램입니다. `secuday.jbax.co.kr` 서브도메인 배포를 전제로 합니다.
 
+## 아키텍처
+
+- **프런트엔드** — 정적 SPA, **GitHub Pages** 호스팅 (`secuday.jbax.co.kr`)
+- **DB / 인증 / 스토리지** — **Supabase** (Postgres + Auth + Storage)
+- **AI 질의** — **Supabase Edge Function**(`ai-ask`)에서 Claude(`claude-opus-4-8`) 호출.
+  `ANTHROPIC_API_KEY`는 서버 시크릿으로만 보관 → 정적 사이트에 키가 노출되지 않음
+
+```
+web/                       GitHub Pages 정적 사이트
+  index.html · app.js · style.css · config.js · CNAME
+supabase/
+  migrations/0001_init.sql   테이블 + RLS + 버전관리 RPC + Storage 버킷
+  functions/ai-ask/index.ts  AI 질의 Edge Function (Deno)
+  config.toml
+legacy_flask/              기존 Flask 단독 버전 (참고용 보관)
+```
+
 ## 주요 기능
 
-- **월별 자료 관리** — 포스터 파일(이미지/PDF), 안내 내용(마크다운), 임직원 수칙 목록
-- **버전 관리** — 모든 수정은 새 버전으로 기록 (수동 수정 / AI 수정 / 롤백 구분)
+- **월별 자료 관리** — 포스터 파일(이미지/PDF), 안내 내용(마크다운), 임직원 수칙
+- **버전 관리** — 모든 수정은 새 버전으로 기록 (수동 / AI / 롤백 구분)
   - 버전 이력 조회, 두 버전 간 diff 비교, 이전 버전으로 복원
-- **AI 질의** — 자료에 대해 질문하거나 수정을 요청하면 Claude(`claude-opus-4-8`)가
-  수정안을 제안하고, 검토 후 새 버전으로 적용
+- **AI 질의** — 자료에 대해 질문하거나 수정을 요청하면 Claude가 수정안을 제안,
+  검토 후 새 버전으로 적용
+- **접근 제어** — Supabase Auth 로그인(임직원 이메일)한 사용자만 열람·편집 (RLS)
 
-## 실행 (개발)
+## 데이터 모델
 
-```sh
-python3 -m pip install --user flask anthropic
-export ANTHROPIC_API_KEY=sk-ant-...   # AI 질의 기능에 필요
-python3 seed.py                        # 최초 1회: 샘플 데이터 생성
-python3 app.py                         # http://127.0.0.1:5234
-```
+| 테이블 | 설명 |
+|---|---|
+| `materials` | 월별 자료 (month, current_version_id) |
+| `versions` | 모든 버전 (title, theme, content, rules(jsonb), poster_path, change_source) |
+| `ai_logs` | 자료별 AI 대화 이력 |
 
-- 포트 변경: `PORT=8000 python3 app.py`
-- 데이터: `data/secuday.db` (SQLite), 포스터 파일: `uploads/`
+버전 생성은 RPC 함수로 원자적 처리: `create_material`, `add_version`, `rollback_version`.
 
-## 구조
+---
 
-```
-app.py            Flask 라우팅 (자료/버전/AI API + 정적 파일)
-db.py             SQLite 스키마·쿼리 (materials / versions / ai_logs)
-ai.py             Claude API 연동 (structured output으로 수정안 생성)
-seed.py           샘플 데이터 시드
-static/           프런트엔드 (index.html / app.js / style.css)
-uploads/          업로드된 포스터 파일
-data/secuday.db   SQLite DB
-```
+## 배포 절차
 
-## API 요약
+### 1. Supabase 설정
 
-| 메서드 | 경로 | 설명 |
-|---|---|---|
-| GET | `/api/materials` | 자료 목록 |
-| POST | `/api/materials` | 자료 등록 (multipart, v1 생성) |
-| GET/PUT/DELETE | `/api/materials/:id` | 조회 / 수정(새 버전 생성) / 삭제 |
-| GET | `/api/materials/:id/versions` | 버전 이력 |
-| GET | `/api/materials/:id/versions/:vno` | 특정 버전 |
-| POST | `/api/materials/:id/rollback/:vno` | 해당 버전으로 복원 (새 버전 생성) |
-| GET | `/api/materials/:id/diff?from=1&to=2` | 버전 간 diff |
-| POST | `/api/materials/:id/ai` | AI 질의 `{message}` → `{reply, proposal}` |
-| POST | `/api/materials/:id/ai/apply` | AI 수정안을 새 버전으로 적용 |
-| GET | `/api/materials/:id/ai/history` | AI 대화 이력 |
+기존 Supabase 프로젝트에 스키마·함수·시크릿을 적용합니다.
 
-## secuday.jbax.co.kr 배포 가이드
-
-서버(리눅스) 1대 기준 예시입니다.
-
-### 1. DNS
-
-jbax.co.kr DNS 관리 콘솔에서 서브도메인 레코드 추가:
-
-```
-secuday.jbax.co.kr.  A      <서버 공인 IP>
-# 또는 기존 웹서버를 가리키면: CNAME  www.jbax.co.kr.
-```
-
-### 2. 앱 실행 (gunicorn + systemd)
+**(A) CLI 사용 (권장)**
 
 ```sh
-pip install flask anthropic gunicorn
+cd secuday
+supabase login                       # 액세스 토큰 입력 (직접)
+supabase link --project-ref <ref>    # 대시보드 URL의 프로젝트 ref
+supabase db push                     # migrations/0001_init.sql 적용
+supabase functions deploy ai-ask     # Edge Function 배포
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-...   # Claude API 키
 ```
 
-`/etc/systemd/system/secuday.service`:
+**(B) 대시보드 사용**
 
-```ini
-[Unit]
-Description=secuday (jeongboboho day material manager)
-After=network.target
+- SQL Editor → `supabase/migrations/0001_init.sql` 내용 붙여넣고 실행
+- Edge Functions → `ai-ask` 생성 후 `functions/ai-ask/index.ts` 내용 붙여넣기
+- Edge Functions → Secrets → `ANTHROPIC_API_KEY` 추가
 
-[Service]
-User=www-data
-WorkingDirectory=/opt/secuday
-Environment=ANTHROPIC_API_KEY=sk-ant-...
-ExecStart=/usr/local/bin/gunicorn -w 2 -b 127.0.0.1:5234 app:app
-Restart=always
+**(C) 임직원 계정 추가** — Authentication → Users → Add user (이메일/비밀번호)
 
-[Install]
-WantedBy=multi-user.target
+### 2. 프런트엔드 설정
+
+`web/config.js`에 Supabase 접속 정보 입력 (Project Settings → API):
+
+```js
+window.SECUDAY_CONFIG = {
+  SUPABASE_URL: "https://xxxx.supabase.co",
+  SUPABASE_ANON_KEY: "eyJ...",   // anon key (공개 가능, RLS로 보호)
+};
 ```
+
+### 3. GitHub Pages 배포
+
+secuday 전용 저장소를 만들고 `web/` 내용을 푸시한 뒤 Pages를 켭니다.
 
 ```sh
-sudo systemctl enable --now secuday
+# 새 repo 생성 후
+git remote add origin https://github.com/<계정>/secuday.git
+git push -u origin main
 ```
 
-### 3. nginx 리버스 프록시 + HTTPS
+- GitHub repo → Settings → Pages → Source: `main` 브랜치 / `/web` (또는 root)
+- `web/CNAME` 파일이 `secuday.jbax.co.kr`로 커스텀 도메인을 지정합니다
 
-`/etc/nginx/sites-available/secuday`:
+### 4. DNS 연결 (가비아)
 
-```nginx
-server {
-    server_name secuday.jbax.co.kr;
-    client_max_body_size 20m;
+`dns.gabia.com` → jbax.co.kr DNS 설정 → 레코드 추가:
 
-    location / {
-        proxy_pass http://127.0.0.1:5234;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
 ```
+타입: CNAME   호스트: secuday   값: <계정>.github.io.   TTL: 600
+```
+
+기존 `lunch`, `www` 레코드와 동일한 GitHub Pages 패턴입니다.
+
+### 5. 로컬 개발
 
 ```sh
-sudo ln -s /etc/nginx/sites-available/secuday /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d secuday.jbax.co.kr   # HTTPS 발급
+cd secuday/web
+python3 -m http.server 5235      # http://127.0.0.1:5235
 ```
 
-### 4. 접근 제어 (권장)
-
-사내용 도구이므로 다음 중 하나를 적용하세요.
-
-- 사내망/VPN에서만 접근 가능하도록 방화벽 제한
-- nginx `auth_basic` 또는 SSO(리버스 프록시 인증) 적용
+`config.js`에 실제 Supabase 값이 들어 있어야 로그인·데이터 조회가 동작합니다.
 
 ## 백업
 
-`data/secuday.db`와 `uploads/` 디렉터리만 백업하면 전체 이력이 보존됩니다.
+데이터는 Supabase에 있습니다. 대시보드 또는 `supabase db dump`로 백업하세요.
+포스터 파일은 Storage `posters` 버킷에 보관됩니다.

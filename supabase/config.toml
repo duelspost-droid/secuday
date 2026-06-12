@@ -1,0 +1,6 @@
+# secuday Supabase 설정
+# project_id 는 `supabase link --project-ref <ref>` 시 자동으로 채워집니다.
+project_id = "secuday"
+
+[functions.ai-ask]
+verify_jwt = true   # 로그인한 임직원만 호출 가능
