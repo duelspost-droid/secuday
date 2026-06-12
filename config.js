@@ -2,6 +2,6 @@
 // 기존 Supabase 프로젝트의 값으로 교체하세요.
 //   Supabase 대시보드 → Project Settings → API 에서 확인
 window.SECUDAY_CONFIG = {
-  SUPABASE_URL: "https://YOUR-PROJECT-REF.supabase.co",
-  SUPABASE_ANON_KEY: "YOUR-ANON-KEY",
+  SUPABASE_URL: "https://nrdapzgtibbusvoaceuh.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_DckNy92c8WFGYWNPRsEjag_q-JQs9km",
 };
