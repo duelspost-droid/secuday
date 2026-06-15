@@ -11,6 +11,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }   /* hidden 속성이 .auth-gate 등의 display를 항상 덮어쓰도록 */
 
 /* 로그인 게이트 */
 .auth-gate {
