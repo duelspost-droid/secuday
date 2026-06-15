@@ -4,3 +4,6 @@ project_id = "secuday"
 
 [functions.ai-ask]
 verify_jwt = true   # 로그인한 임직원만 호출 가능
+
+[functions.generate-poster]
+verify_jwt = true   # cron/관리자는 service_role 또는 JWT로 호출
