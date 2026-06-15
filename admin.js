@@ -101,6 +101,19 @@ async function signOut() {
   await sb.auth.signOut();
 }
 
+/* 로그인한 관리자가 본인 비밀번호를 직접 변경 */
+async function changePassword() {
+  const pw = prompt("새 비밀번호를 입력하세요 (6자 이상):");
+  if (pw === null) return;
+  if (pw.length < 6) { toast("비밀번호는 6자 이상이어야 합니다.", true); return; }
+  const pw2 = prompt("확인을 위해 한 번 더 입력하세요:");
+  if (pw2 === null) return;
+  if (pw !== pw2) { toast("두 비밀번호가 일치하지 않습니다.", true); return; }
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) { toast("변경 실패: " + error.message, true); return; }
+  toast("비밀번호가 변경되었습니다. 다음 로그인부터 적용됩니다.");
+}
+
 /* ---------- 자료 조회 ---------- */
 async function fetchMaterial(id) {
   const { data: m, error } = await sb.from("materials").select("*").eq("id", id).single();
