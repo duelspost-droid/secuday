@@ -32,12 +32,48 @@ function mdToHtml(text: string) {
       if (/^### /.test(l)) return `<h4 style="margin:14px 0 4px">${l.slice(4)}</h4>`;
       if (/^## /.test(l)) return `<h3 style="margin:16px 0 6px;color:#0a2a5c">${l.slice(3)}</h3>`;
       if (/^# /.test(l)) return `<h2 style="margin:18px 0 8px;color:#0a2a5c">${l.slice(2)}</h2>`;
+      if (/^\s*(?:>|&gt;)\s?/.test(l)) return `<blockquote style="border-left:3px solid #047857;background:#f0faf5;padding:8px 14px;margin:10px 0">${l.replace(/^\s*(?:>|&gt;)\s?/, "")}</blockquote>`;
       if (/^\s*[-*] /.test(l)) return `<li>${l.replace(/^\s*[-*] /, "")}</li>`;
       if (l.trim() === "") return "<br>";
       return `<p style="margin:8px 0;line-height:1.7">${l}</p>`;
     })
     .join("")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
+/* 표준 뉴스레터 포맷 이메일 (versions.newsletter 기반) — 관리자 미리보기/PDF와 동일한 섹션 구성 */
+function buildNewsletterEmail(nl: any, monthLabel: string) {
+  const link = (u: string) => (/^https?:\/\//i.test(u || "") ? u : "");
+  const heads = (nl.headlines || []).map((h: any) => {
+    const url = link(h.link);
+    return `<div style="border:1px solid #dde3ec;border-left:4px solid #1a56db;padding:12px 16px;margin:10px 0;background:#fbfcfe">
+      <div style="font-weight:700;margin-bottom:6px;line-height:1.45">${esc(h.title)}</div>
+      <div style="font-size:14px;line-height:1.7;color:#374151">${mdToHtml(h.summary)}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:8px">${esc(h.source)}${url ? ` · <a href="${url}" style="color:#1a56db">원문 ↗</a>` : ""}</div>
+    </div>`;
+  }).join("");
+  const dd = nl.deep_dive || {};
+  return `<!DOCTYPE html><html lang="ko"><body style="margin:0;background:#f4f6fa;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#1f2937">
+  <div style="max-width:640px;margin:0 auto;background:#fff">
+    <div style="background:#0a2a5c;color:#fff;padding:22px 28px">
+      <div style="font-size:20px;font-weight:800">🛡 secuday · 정보보호의 날</div>
+      <div style="font-size:13px;color:#9db9e8;margin-top:4px">${esc(monthLabel)} · 금융권 보안 인식 뉴스레터</div>
+    </div>
+    <div style="padding:28px">
+      <h1 style="font-size:22px;color:#1a56db;margin:0 0 14px;line-height:1.4">${esc(nl.subject)}</h1>
+      <div style="font-size:15px;line-height:1.75">${mdToHtml(nl.intro)}</div>
+      ${heads ? `<h3 style="border-bottom:2px solid #dde3ec;padding-bottom:6px;margin:26px 0 12px;color:#0a2a5c">📰 이달의 보안 뉴스</h3>${heads}` : ""}
+      ${dd.body ? `<h3 style="border-bottom:2px solid #dde3ec;padding-bottom:6px;margin:26px 0 12px;color:#0a2a5c">🔎 ${esc(dd.heading || "이달의 심층 분석")}</h3><div style="font-size:15px;line-height:1.75">${mdToHtml(dd.body)}</div>` : ""}
+      ${nl.tip ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:14px 16px;margin:20px 0;font-size:14px;line-height:1.7"><strong style="color:#b45309">💡 이달의 팁</strong> ${esc(nl.tip)}</div>` : ""}
+      ${nl.closing ? `<div style="color:#6b7280;margin-top:18px;line-height:1.75">${mdToHtml(nl.closing)}</div>` : ""}
+      <div style="text-align:center;margin:26px 0">
+        <a href="${SITE}" style="background:#1a56db;color:#fff;text-decoration:none;padding:12px 26px;border-radius:8px;font-weight:700;display:inline-block">전체 자료 보기 →</a>
+      </div>
+    </div>
+    <div style="background:#f4f6fa;color:#9aa3b2;font-size:12px;text-align:center;padding:18px">
+      secuday.jbax.co.kr · 정보보호팀<br>본 메일은 정보보호의 날 보안 인식 캠페인의 일환으로 발송되었습니다.
+    </div>
+  </div></body></html>`;
 }
 
 function buildEmail(v: any, monthLabel: string, posterUrl: string | null) {
@@ -101,8 +137,10 @@ Deno.serve(async (req) => {
   const posterUrl = v.poster_path
     ? supabase.storage.from("posters").getPublicUrl(v.poster_path).data.publicUrl
     : null;
-  const html = buildEmail(v, monthLabel, posterUrl);
-  const subject = `[정보보호의 날] ${monthLabel} — ${v.theme}`;
+  // 뉴스레터가 있으면 표준 뉴스레터 포맷으로, 없으면 기존 안내문 포맷으로 발송
+  const nl = v.newsletter && v.newsletter.subject ? v.newsletter : null;
+  const html = nl ? buildNewsletterEmail(nl, monthLabel) : buildEmail(v, monthLabel, posterUrl);
+  const subject = nl ? nl.subject : `[정보보호의 날] ${monthLabel} — ${v.theme}`;
 
   // Resend 발송 (수신자별 개별 발송, 서로 주소 노출 안 됨)
   const results: any[] = [];
