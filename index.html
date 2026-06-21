@@ -31,6 +31,7 @@
 
         <nav class="tabs">
           <button class="tab active" data-tab="content" onclick="switchTab('content')">자료 보기</button>
+          <button class="tab" data-tab="newsletter" onclick="switchTab('newsletter')" hidden>뉴스레터</button>
           <button class="tab" data-tab="history" onclick="switchTab('history')">버전 이력</button>
         </nav>
 
@@ -44,6 +45,13 @@
               <ol id="content-rules" class="rules"></ol>
             </div>
           </div>
+        </div>
+
+        <div id="tab-newsletter" class="tabpane" hidden>
+          <div class="nl-toolbar">
+            <button class="btn" onclick="downloadNewsletterPdf()">📄 PDF 다운로드</button>
+          </div>
+          <div id="nl-preview" class="nl-preview"></div>
         </div>
 
         <div id="tab-history" class="tabpane" hidden>
@@ -60,6 +68,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
+  <script src="newsletter-template.js"></script>
   <script src="public.js"></script>
 </body>
 </html>
