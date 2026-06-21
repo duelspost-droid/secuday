@@ -511,10 +511,10 @@ function renderNewsletter() {
     : `<div class="empty">아직 뉴스레터가 없습니다. ‘AI 자동 생성’으로 시작하세요.</div>`;
 }
 
-// 미리보기는 표준 템플릿(newsletter-template.js)에 위임 — PDF·이메일과 동일 포맷.
+// 미리보기는 표준 템플릿(newsletter-template.js)에 위임 — PDF와 동일(인라인 SVG) 포맷.
 function renderNewsletterHTML(nl) {
-  return NewsletterTemplate.documentShell(
-    NewsletterTemplate.renderBody(nl),
+  return NewsletterTemplate.renderNewsletterFull(
+    nl,
     NewsletterTemplate.monthLabel(current && current.month),
   );
 }
