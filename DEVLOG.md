@@ -151,3 +151,35 @@ AI가 본문 실천 팁을 `> ✅ 실천:` 형태(마크다운 인용)로 작성
   프런트의 기존 호출(8 named-params)은 `p_newsletter` 기본값(null)으로 자연 동작 → 본문만 수정해도 뉴스레터 보존.
 - **generate-newsletter는 DB에 쓰지 않음** — ai-ask의 proposal 패턴처럼 초안만 반환하고,
   저장은 인증된 클라이언트가 `add_version(p_newsletter=...)`로 수행(RLS 일관성 + 검토 후 저장 UX).
+
+---
+
+## 2026-06-22 — 이후 변경 이력 (전체 정리)
+
+이 날까지 누적된 변경. PR은 모두 `main`에 머지됨(레포 정책상 직접 push 불가 → PR 방식).
+
+- **PDF 다운로드** (PR #2): 자료 보기 탭에 `📄 PDF 다운로드`(`downloadMaterialPdf`) + 뉴스레터 탭 PDF. 브라우저 인쇄→'PDF로 저장'(A4, 한글 벡터).
+- **표준 템플릿 단일화 + 뉴스레터 디자인 개편** (PR #3, #7): `newsletter-template.js`가 미리보기·PDF 공통 포맷의 단일 소스.
+  최종은 **인라인 스타일/인라인 SVG** 렌더(`renderNewsletterFull`) → 미리보기=PDF 100% 동일. 히어로(방패 SVG)·경고배너(alert)·대형 수치(stats)·헤드라인 카테고리 SVG 아이콘·공격 흐름 다이어그램·보안 수칙 체크리스트.
+  아이콘은 `category`(deepfake|voice|phishing|supplychain|insider|ransomware|vuln|dataleak|general) → 없으면 이모지/키워드로 자동 추론. 자료(material) PDF는 별도 `documentShell`+`DOC_CSS` 경로 유지.
+- **generate-newsletter 스키마/프롬프트 보강**: `cover_emoji`, `alert`, `stats[{value,label}]×3`, `headlines[].emoji/category`, `tips[]` 추가 → AI가 풀버전 자동 생성. **함수는 대시보드 "Deploy a new function → Via Editor"로 같은 이름 재배포(업서트)** 해야 반영됨(레포 머지로는 Edge Function이 자동 배포되지 않음).
+- **관리자 로그인 간소화** (PR #4): 이메일 입력 제거 → **비밀번호만** 입력. `admin.js`에 `ADMIN_EMAIL` 고정값 + `signInWithPassword`. 비밀번호는 Supabase `auth.users`에 bcrypt로 저장(문서엔 미기재). 분실 시 대시보드에서 매직링크 로그인 → '비밀번호 변경'으로 재설정. (필요 시 SQL `update auth.users set encrypted_password = crypt('<새비번>', gen_salt('bf'))` 도 가능)
+- **모바일 반응형** (PR #5, #6): topbar/detail-head `flex-wrap` 항상 줄바꿈 + 모바일 부제 숨김·버튼 축소·탭/테이블 가로 스크롤·로그인 카드 `min(340px,92vw)`.
+- **가비아 DNS**: `jbax.co.kr` apex에 A 레코드 4개(185.199.108~111.153) 추가 → apex 정상 해석. (단 apex/www는 jbax-www가 점유 → 아래 도메인 메모 참고)
+
+### 운영 메모 (다른 PC에서 꼭 알아야 할 것)
+- **Supabase**: project ref `nrdapzgtibbusvoaceuh`. SQL/함수 배포는 대시보드(로그인 필요). 시크릿 `ANTHROPIC_API_KEY` 설정됨, `RESEND_API_KEY` 미설정(메일 발송 보류).
+- **관리자 로그인**: `secuday.jbax.co.kr/admin.html` → 비밀번호만 입력(이메일 없음). 계정 이메일은 `admin.js`에 코드 고정. **비밀번호 값은 문서에 적지 않음**(정보보호팀 별도 보관).
+- **배포**: 프런트는 GitHub Pages(`main` push→자동). 단 secuday는 직접 push가 막혀 **PR 생성→머지**로. Edge Function 변경 시 **대시보드 Via Editor 재배포** 별도 필요.
+- **도메인**: secuday=secuday.jbax.co.kr, 공식 랜딩=jbax-home(github.io/jbax-home), `jbax.co.kr`/www=jbax-www(플레이그라운드).
+- **함수 직접 호출 테스트**: `POST …/functions/v1/generate-newsletter` (apikey+Authorization = config.js의 publishable key, body `{"month":"YYYY-MM"}`).
+
+### 다른 PC에서 이어가기
+```sh
+git clone https://github.com/duelspost-droid/secuday.git
+git clone https://github.com/duelspost-droid/jbax-home.git
+git clone https://github.com/duelspost-droid/jbax-www.git
+# 로컬 미리보기:  cd secuday && python -m http.server 5235  (또는 node 정적서버)
+```
+- 관련 레포 모두 GitHub `duelspost-droid` 계정. 추가 비밀키 불필요(config.js의 publishable key만 공개로 사용, RLS 보호).
+- `samples/`에 생성 예시(2026-07, 2026-08) 보관.
