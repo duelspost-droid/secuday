@@ -128,9 +128,7 @@ function switchTab(name) {
 function renderNewsletter() {
   const nl = current.current && current.current.newsletter;
   $("#nl-preview").innerHTML = nl
-    ? NewsletterTemplate.documentShell(
-        NewsletterTemplate.renderBody(nl),
-        NewsletterTemplate.monthLabel(current.month))
+    ? NewsletterTemplate.renderNewsletterFull(nl, NewsletterTemplate.monthLabel(current.month))
     : `<div class="empty">아직 뉴스레터가 없습니다.</div>`;
 }
 
