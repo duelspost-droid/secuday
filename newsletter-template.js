@@ -87,13 +87,38 @@
       "</article>";
   }
 
-  function documentShell(bodyHtml, label) {
+  function documentShell(bodyHtml, label, subtitle, foot) {
+    subtitle = subtitle || "금융권 보안 인식 뉴스레터";
+    foot = foot || "secuday.jbax.co.kr · 정보보호팀 — AI 자동 생성 후 출처 검증을 거친 자료입니다";
     return '<div class="nl-doc">' +
       '<div class="nl-band"><div class="t">🛡 secuday · 정보보호의 날</div>' +
-      '<div class="s">' + esc(label) + " · 금융권 보안 인식 뉴스레터</div></div>" +
+      '<div class="s">' + esc(label) + " · " + esc(subtitle) + "</div></div>" +
       bodyHtml +
-      '<div class="nl-foot">secuday.jbax.co.kr · 정보보호팀 — AI 자동 생성 후 출처 검증을 거친 자료입니다</div>' +
+      '<div class="nl-foot">' + esc(foot) + "</div>" +
       "</div>";
+  }
+
+  /* 월별 자료(material) 본문 — 자료 보기 PDF용. mat = 현재 버전 {title,theme,content,rules}, posterUrl 선택 */
+  function renderMaterialBody(mat, posterUrl) {
+    mat = mat || {};
+    var rules = (mat.rules || []).map(function (r) { return "<li>" + esc(r) + "</li>"; }).join("");
+    return '<article class="nl">' +
+      '<h2 class="nl-subject">' + esc(mat.title) + "</h2>" +
+      (mat.theme ? '<div class="mat-theme">테마: ' + esc(mat.theme) + "</div>" : "") +
+      (posterUrl ? '<div class="mat-poster"><img src="' + escAttr(posterUrl) + '" alt="포스터"></div>' : "") +
+      (mat.content ? '<h3 class="nl-h">📋 안내 내용</h3><div class="nl-body">' + md(mat.content) + "</div>" : "") +
+      (rules ? '<h3 class="nl-h">✅ 임직원 수칙</h3><ol class="mat-rules">' + rules + "</ol>" : "") +
+      "</article>";
+  }
+
+  function buildMaterialPrintDocument(mat, monthStr, posterUrl) {
+    var label = monthLabel(monthStr);
+    var title = "정보보호의날_자료_" + (monthStr || "");
+    return "<!DOCTYPE html><html lang=\"ko\"><head><meta charset=\"UTF-8\">" +
+      "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
+      "<title>" + esc(title) + "</title><style>" + DOC_CSS + "</style></head><body>" +
+      documentShell(renderMaterialBody(mat, posterUrl), label, "금융권 보안 인식 자료", "secuday.jbax.co.kr · 정보보호팀") +
+      "</body></html>";
   }
 
   /* 인쇄(PDF)용 자체 완결 CSS — 앱 style.css에 의존하지 않는다. A4 기준. */
@@ -119,6 +144,10 @@
     ".nl-tip strong{color:#b45309;}" +
     ".nl-closing{color:#6b7280;margin-top:18px;line-height:1.75;}" +
     ".nl-foot{background:#f4f6fa;color:#9aa3b2;font-size:12px;text-align:center;padding:18px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}" +
+    ".mat-theme{color:#1a56db;font-weight:700;margin:-4px 0 14px;}" +
+    ".mat-poster{text-align:center;margin:14px 0;}" +
+    ".mat-poster img{max-width:100%;border:1px solid #dde3ec;border-radius:8px;break-inside:avoid;}" +
+    ".mat-rules{margin:6px 0;padding-left:22px;}.mat-rules li{margin:6px 0;line-height:1.7;}" +
     "@page{size:A4;margin:12mm;}" +
     "@media print{body{background:#fff;}.nl-doc{border:none;border-radius:0;margin:0;max-width:none;}}";
 
@@ -135,5 +164,6 @@
   window.NewsletterTemplate = {
     esc: esc, escAttr: escAttr, safeUrl: safeUrl, md: md, monthLabel: monthLabel,
     renderBody: renderBody, documentShell: documentShell, buildPrintDocument: buildPrintDocument,
+    renderMaterialBody: renderMaterialBody, buildMaterialPrintDocument: buildMaterialPrintDocument,
   };
 })();
