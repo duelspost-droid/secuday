@@ -20,7 +20,7 @@
 }
 .auth-card {
   background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-  padding: 36px 32px; width: 340px; box-shadow: 0 8px 30px rgba(26,86,219,.10);
+  padding: 36px 32px; width: min(340px, 92vw); box-shadow: 0 8px 30px rgba(26,86,219,.10);
   display: flex; flex-direction: column; gap: 12px; text-align: center;
 }
 .auth-card h1 { margin: 0; color: var(--primary); }
@@ -240,6 +240,29 @@ main { max-width: 1080px; margin: 0 auto; padding: 24px; }
 .toast.error { background: var(--danger); }
 
 @media (max-width: 760px) {
+  main { padding: 16px; }
+  /* 상단바: 한 줄 강제 → 줄바꿈 허용, 부제 숨김, 버튼 축소 */
+  .topbar { flex-wrap: wrap; gap: 8px 10px; padding: 12px 16px; }
+  .topbar h1 { font-size: 19px; }
+  .subtitle { display: none; }
+  .topbar .btn { padding: 7px 12px; font-size: 13px; }
+  .user-email { order: 10; width: 100%; }
+  /* 상세 */
   .detail-grid { grid-template-columns: 1fr; }
   .row { grid-template-columns: 1fr; }
+  .detail-head { flex-wrap: wrap; gap: 8px; }
+  .detail-head h2 { font-size: 17px; width: 100%; }
+  .detail-head .spacer { display: none; }
+  /* 탭: 가로 스크롤 */
+  .tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .tab { white-space: nowrap; padding: 9px 13px; }
+  .tabpane { padding: 16px; }
+  /* 버전 테이블: 좁은 화면에서 가로 스크롤 */
+  #tab-history { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .vtable { font-size: 12px; }
+  .vtable th, .vtable td { padding: 7px 6px; }
+  /* 뉴스레터 문서 여백 축소 */
+  .nl { padding: 18px 16px; }
+  .nl-band { padding: 16px 18px; }
+  .nl-toolbar { gap: 6px; }
 }
