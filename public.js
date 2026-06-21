@@ -146,6 +146,19 @@ function downloadNewsletterPdf() {
   setTimeout(() => { try { w.print(); } catch (e) { /* 사용자가 직접 인쇄 가능 */ } }, 400);
 }
 
+/* 자료 보기 — 현재 자료(제목·테마·포스터·안내·수칙)를 표준 A4 문서로 PDF 다운로드(인쇄) */
+function downloadMaterialPdf() {
+  if (!current) return;
+  const c = current.current;
+  const purl = (c.poster_path && !c.poster_path.endsWith(".pdf")) ? posterUrl(c.poster_path) : null;
+  const w = window.open("", "_blank");
+  if (!w) { toast("팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 시도하세요.", true); return; }
+  w.document.write(NewsletterTemplate.buildMaterialPrintDocument(c, current.month, purl));
+  w.document.close();
+  w.focus();
+  setTimeout(() => { try { w.print(); } catch (e) { /* 사용자가 직접 인쇄 가능 */ } }, purl ? 800 : 400);
+}
+
 /* ---------- 버전 이력 (열람만) ---------- */
 async function loadVersions() {
   const { data: versions, error } = await sb
