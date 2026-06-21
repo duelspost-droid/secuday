@@ -2,6 +2,9 @@
 const cfg = window.SECUDAY_CONFIG;
 const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
 
+// 로그인은 비밀번호만 입력받고, 계정 이메일은 고정값을 사용한다(이메일 입력 제거).
+const ADMIN_EMAIL = "duels@jbfg.com";
+
 let current = null;        // 현재 열려 있는 자료 {id, month, current: {...버전}}
 let editingId = null;      // 편집 중인 자료 id (null이면 신규)
 let lastProposal = null;   // 마지막 AI 수정안
@@ -97,7 +100,7 @@ async function signIn(ev) {
   btn.disabled = true;
   $("#auth-error").hidden = true;
   const { error } = await sb.auth.signInWithPassword({
-    email: $("#auth-email").value.trim(),
+    email: ADMIN_EMAIL,
     password: $("#auth-pw").value,
   });
   btn.disabled = false;
