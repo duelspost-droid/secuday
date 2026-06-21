@@ -5,6 +5,8 @@ const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY)
 let current = null;        // 현재 열려 있는 자료 {id, month, current: {...버전}}
 let editingId = null;      // 편집 중인 자료 id (null이면 신규)
 let lastProposal = null;   // 마지막 AI 수정안
+let nlDraft = null;        // 저장 전 작업 중인 뉴스레터 초안
+let nlDraftSource = "ai";  // 초안 출처 (ai | manual) — 저장 시 change_source로 사용
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -22,6 +24,16 @@ function esc(s) {
   const d = document.createElement("div");
   d.textContent = s ?? "";
   return d.innerHTML;
+}
+
+/* 속성값(value="...")에 안전하게 넣기 위해 따옴표까지 이스케이프 */
+function escAttr(s) {
+  return esc(s).replace(/"/g, "&quot;");
+}
+
+/* http/https 링크만 허용 (javascript: 등 차단) */
+function safeUrl(u) {
+  return /^https?:\/\//i.test(u || "") ? u : "";
 }
 
 function md(text) {
@@ -251,6 +263,7 @@ async function openDetail(id) {
     current = await fetchMaterial(id);
   } catch (e) { toast(e.message, true); return; }
   lastProposal = null;
+  nlDraft = null;
   $("#proposal-box").hidden = true;
   renderDetail();
   show("#view-detail");
@@ -279,6 +292,7 @@ function switchTab(name) {
   $(`#tab-${name}`).hidden = false;
   if (name === "history") loadVersions();
   if (name === "ai") loadAiHistory();
+  if (name === "newsletter") renderNewsletter();
 }
 
 /* ---------- 버전 이력 ---------- */
@@ -468,6 +482,210 @@ async function applyProposal() {
   current = await fetchMaterial(current.id);
   renderDetail();
   dismissProposal();
+}
+
+/* ---------- 뉴스레터 ---------- */
+// 뉴스레터는 versions.newsletter(jsonb)에 저장되며, 수정 시 새 버전으로 기록된다.
+// nlDraft = 저장 전 작업 중인 초안. null이면 현재 저장된 뉴스레터를 표시.
+
+function currentNewsletter() {
+  return (current && current.current && current.current.newsletter) || null;
+}
+
+function renderNewsletter() {
+  $("#nl-edit").hidden = true;
+  const saved = currentNewsletter();
+  const draft = nlDraft;
+  const showNl = draft || saved;
+
+  $("#nl-draft-actions").hidden = !draft;
+  $("#nl-status").textContent = draft
+    ? "⚠️ 저장되지 않은 초안입니다. 검토 후 ‘새 버전으로 저장’을 누르세요."
+    : (saved ? `현재 뉴스레터 (v${current.current.version_no} 기준)` : "");
+
+  $("#nl-preview").innerHTML = showNl
+    ? renderNewsletterHTML(showNl)
+    : `<div class="empty">아직 뉴스레터가 없습니다. ‘AI 자동 생성’으로 시작하세요.</div>`;
+}
+
+// 미리보기는 표준 템플릿(newsletter-template.js)에 위임 — PDF·이메일과 동일 포맷.
+function renderNewsletterHTML(nl) {
+  return NewsletterTemplate.documentShell(
+    NewsletterTemplate.renderBody(nl),
+    NewsletterTemplate.monthLabel(current && current.month),
+  );
+}
+
+/* 현재 뉴스레터(초안 우선)를 표준 포맷 A4 문서로 열고 인쇄(PDF로 저장) */
+function downloadNewsletterPdf() {
+  if (!current) return;
+  const nl = nlDraft || currentNewsletter();
+  if (!nl) { toast("먼저 뉴스레터를 생성/저장하세요.", true); return; }
+  const w = window.open("", "_blank");
+  if (!w) { toast("팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 시도하세요.", true); return; }
+  w.document.write(NewsletterTemplate.buildPrintDocument(nl, current.month));
+  w.document.close();
+  w.focus();
+  // 렌더 완료 후 인쇄 다이얼로그(대상: 'PDF로 저장')
+  setTimeout(() => { try { w.print(); } catch (e) { /* 사용자가 직접 인쇄 가능 */ } }, 400);
+}
+
+/* AI 자동 생성 (web search 포함) */
+async function generateNewsletter() {
+  if (!current) return;
+  const btn = $("#nl-generate");
+  const prev = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "생성 중… (웹 검색, 최대 1분)";
+  try {
+    const { data, error } = await sb.functions.invoke("generate-newsletter", {
+      body: { month: current.month, material: current },
+    });
+    if (error) throw error;
+    if (data.error) throw new Error(data.error);
+    nlDraft = data.newsletter;
+    nlDraftSource = "ai";
+    renderNewsletter();
+    toast("뉴스레터 초안이 생성되었습니다. 검토 후 저장하세요.");
+  } catch (e) {
+    toast(e.message || "생성 중 오류가 발생했습니다.", true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prev;
+  }
+}
+
+/* AI로 수정 — 현재 초안(또는 저장된 뉴스레터)을 지시대로 고침 */
+async function aiEditNewsletter() {
+  if (!current) return;
+  const base = nlDraft || currentNewsletter();
+  if (!base) { toast("먼저 뉴스레터를 생성하세요.", true); return; }
+  const instruction = prompt(
+    "AI에게 수정 요청을 입력하세요:\n예) 톤을 더 친근하게 / 랜섬웨어 헤드라인 추가 / 팁을 퀴즈 형식으로");
+  if (!instruction || !instruction.trim()) return;
+  toast("AI가 수정 중…");
+  try {
+    const { data, error } = await sb.functions.invoke("generate-newsletter", {
+      body: { month: current.month, material: current, current: base, instruction },
+    });
+    if (error) throw error;
+    if (data.error) throw new Error(data.error);
+    nlDraft = data.newsletter;
+    nlDraftSource = "ai";
+    renderNewsletter();
+    toast("AI 수정안이 적용되었습니다. 검토 후 저장하세요.");
+  } catch (e) {
+    toast(e.message || "AI 수정 중 오류가 발생했습니다.", true);
+  }
+}
+
+/* 수동 편집 폼 */
+function editNewsletter() {
+  if (!current) return;
+  const base = nlDraft || currentNewsletter() ||
+    { subject: "", intro: "", headlines: [], deep_dive: { heading: "", body: "" }, tip: "", closing: "" };
+  $("#nl-preview").innerHTML = "";
+  $("#nl-status").textContent = "";
+  $("#nl-draft-actions").hidden = true;
+  renderNewsletterForm(base);
+  $("#nl-edit").hidden = false;
+}
+
+function headlineRowHTML(h) {
+  h = h || { title: "", summary: "", source: "", link: "" };
+  return `<div class="nl-head-row">
+    <input class="nlh-title" type="text" placeholder="헤드라인" value="${escAttr(h.title)}">
+    <textarea class="nlh-summary" rows="2" placeholder="요약·시사점">${esc(h.summary)}</textarea>
+    <div class="row">
+      <input class="nlh-source" type="text" placeholder="출처(매체+시기)" value="${escAttr(h.source)}">
+      <input class="nlh-link" type="text" placeholder="원문 URL(선택)" value="${escAttr(h.link)}">
+    </div>
+    <button type="button" class="btn small danger" onclick="this.closest('.nl-head-row').remove()">행 삭제</button>
+  </div>`;
+}
+
+function addHeadlineRow() {
+  $("#nlf-headlines").insertAdjacentHTML("beforeend", headlineRowHTML());
+}
+
+function renderNewsletterForm(nl) {
+  const dd = nl.deep_dive || {};
+  $("#nl-form-fields").innerHTML = `
+    <label>제목 <input id="nlf-subject" type="text" value="${escAttr(nl.subject)}"></label>
+    <label>도입 인사말 (마크다운) <textarea id="nlf-intro" rows="3">${esc(nl.intro)}</textarea></label>
+    <div class="nl-heads-head">
+      <span>이달의 보안 뉴스</span>
+      <button type="button" class="btn small" onclick="addHeadlineRow()">+ 헤드라인 추가</button>
+    </div>
+    <div id="nlf-headlines"></div>
+    <label>심층 분석 소제목 <input id="nlf-dd-heading" type="text" value="${escAttr(dd.heading)}"></label>
+    <label>심층 분석 본문 (마크다운) <textarea id="nlf-dd-body" rows="5">${esc(dd.body)}</textarea></label>
+    <label>이달의 팁 <input id="nlf-tip" type="text" value="${escAttr(nl.tip)}"></label>
+    <label>마무리 멘트 <textarea id="nlf-closing" rows="2">${esc(nl.closing)}</textarea></label>`;
+  const cont = $("#nlf-headlines");
+  (nl.headlines || []).forEach((h) => cont.insertAdjacentHTML("beforeend", headlineRowHTML(h)));
+}
+
+function collectNewsletterForm() {
+  const heads = [...document.querySelectorAll("#nlf-headlines .nl-head-row")].map((r) => ({
+    title: r.querySelector(".nlh-title").value.trim(),
+    summary: r.querySelector(".nlh-summary").value.trim(),
+    source: r.querySelector(".nlh-source").value.trim(),
+    link: r.querySelector(".nlh-link").value.trim(),
+  })).filter((h) => h.title || h.summary);
+  return {
+    subject: $("#nlf-subject").value.trim(),
+    intro: $("#nlf-intro").value,
+    headlines: heads,
+    deep_dive: { heading: $("#nlf-dd-heading").value.trim(), body: $("#nlf-dd-body").value },
+    tip: $("#nlf-tip").value.trim(),
+    closing: $("#nlf-closing").value,
+  };
+}
+
+function applyNewsletterForm() {
+  nlDraft = collectNewsletterForm();
+  nlDraftSource = "manual";
+  $("#nl-edit").hidden = true;
+  renderNewsletter();
+}
+
+function cancelNewsletterForm() {
+  $("#nl-edit").hidden = true;
+  renderNewsletter();
+}
+
+function discardNewsletterDraft() {
+  nlDraft = null;
+  renderNewsletter();
+}
+
+/* 초안을 새 버전으로 저장 (포스터/본문/수칙은 carry-forward) */
+async function saveNewsletter() {
+  if (!nlDraft || !current) return;
+  const note = prompt("버전 이력에 남길 변경 메모:", "뉴스레터 수정") ?? "뉴스레터 수정";
+  const c = current.current;
+  try {
+    const { data, error } = await sb.rpc("add_version", {
+      p_material_id: current.id,
+      p_title: c.title,
+      p_theme: c.theme,
+      p_content: c.content,
+      p_rules: c.rules || [],
+      p_poster_path: null,        // null → 직전 포스터 유지
+      p_change_note: note,
+      p_change_source: nlDraftSource,
+      p_newsletter: nlDraft,
+    });
+    if (error) throw error;
+    nlDraft = null;
+    current = await fetchMaterial(current.id);
+    renderDetail();
+    renderNewsletter();
+    toast(`뉴스레터가 v${data.version_no}로 저장되었습니다.`);
+  } catch (e) {
+    toast(e.message || "저장 중 오류가 발생했습니다.", true);
+  }
 }
 
 /* ---------- 시작 ---------- */

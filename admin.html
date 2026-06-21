@@ -77,6 +77,7 @@
 
         <nav class="tabs">
           <button class="tab active" data-tab="content" onclick="switchTab('content')">자료 보기</button>
+          <button class="tab" data-tab="newsletter" onclick="switchTab('newsletter')">뉴스레터</button>
           <button class="tab" data-tab="history" onclick="switchTab('history')">버전 이력</button>
           <button class="tab" data-tab="ai" onclick="switchTab('ai')">AI 질의</button>
         </nav>
@@ -89,6 +90,29 @@
               <div id="content-body" class="content-body"></div>
               <h3>임직원 수칙</h3>
               <ol id="content-rules" class="rules"></ol>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-newsletter" class="tabpane" hidden>
+          <p class="hint">AI가 이번 달 자료를 바탕으로 임직원 보안 뉴스레터를 작성합니다. 생성·수정 후 검토하여 새 버전으로 저장하세요.</p>
+          <div class="nl-toolbar">
+            <button class="btn primary" id="nl-generate" onclick="generateNewsletter()">✨ AI 자동 생성</button>
+            <button class="btn" onclick="aiEditNewsletter()">🤖 AI로 수정</button>
+            <button class="btn" onclick="editNewsletter()">✏️ 수동 편집</button>
+            <button class="btn" onclick="downloadNewsletterPdf()">📄 PDF 다운로드</button>
+          </div>
+          <p id="nl-status" class="nl-status"></p>
+          <div id="nl-preview" class="nl-preview"></div>
+          <div id="nl-draft-actions" class="actions" hidden>
+            <button class="btn primary" onclick="saveNewsletter()">새 버전으로 저장</button>
+            <button class="btn" onclick="discardNewsletterDraft()">초안 버리기</button>
+          </div>
+          <div id="nl-edit" class="nl-edit" hidden>
+            <div id="nl-form-fields"></div>
+            <div class="actions">
+              <button type="button" class="btn primary" onclick="applyNewsletterForm()">적용(미리보기)</button>
+              <button type="button" class="btn" onclick="cancelNewsletterForm()">취소</button>
             </div>
           </div>
         </div>
@@ -129,6 +153,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
+  <script src="newsletter-template.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

@@ -175,6 +175,49 @@ main { max-width: 1080px; margin: 0 auto; padding: 24px; }
 .proposal h4 { margin-top: 0; color: #7c3aed; }
 .proposal-content { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin: 8px 0; max-height: 240px; overflow-y: auto; }
 
+/* 뉴스레터 */
+.nl-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.nl-status { color: var(--muted); font-size: 13px; margin: 4px 0 12px; }
+.nl-preview:empty { display: none; }
+/* 표준 문서 셸 (미리보기·PDF 공통 포맷) */
+.nl-doc { max-width: 680px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.nl-band { background: #0a2a5c; color: #fff; padding: 20px 28px; }
+.nl-band .t { font-size: 19px; font-weight: 800; }
+.nl-band .s { font-size: 13px; color: #9db9e8; margin-top: 4px; }
+.nl-foot { background: var(--bg); color: #9aa3b2; font-size: 12px; text-align: center; padding: 16px; }
+.nl-quote { border-left: 3px solid var(--green); background: #f0faf5; padding: 8px 14px; margin: 10px 0; font-size: 14px; }
+.nl-quote p { margin: 4px 0; }
+.nl { padding: 26px 30px; }
+.nl-subject { color: var(--primary); margin: 0 0 12px; font-size: 22px; line-height: 1.4; }
+.nl-intro { line-height: 1.7; margin-bottom: 18px; }
+.nl-intro p { margin: 6px 0; }
+.nl-h { color: var(--text); border-bottom: 2px solid var(--border); padding-bottom: 6px; margin: 24px 0 12px; font-size: 16px; }
+.nl-card { border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 8px; padding: 12px 16px; margin: 10px 0; background: #fbfcfe; }
+.nl-card-title { font-weight: 700; margin-bottom: 4px; }
+.nl-card-summary { font-size: 14px; line-height: 1.6; color: #374151; }
+.nl-card-summary p { margin: 4px 0; }
+.nl-card-source { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.nl-card-source a { color: var(--primary); }
+.nl-body { line-height: 1.7; }
+.nl-body p { margin: 6px 0; }
+.nl-tip { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 12px 16px; margin: 18px 0; font-size: 14px; line-height: 1.6; }
+.nl-tip strong { color: #b45309; }
+.nl-closing { color: var(--muted); margin-top: 18px; line-height: 1.7; }
+
+/* 뉴스레터 수동 편집 폼 */
+.nl-edit { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin-top: 6px; }
+.nl-edit label { display: block; margin-bottom: 14px; font-size: 14px; font-weight: 600; }
+.nl-edit input, .nl-edit textarea {
+  display: block; width: 100%; margin-top: 6px; padding: 9px 12px;
+  border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit;
+}
+.nl-edit input:focus, .nl-edit textarea:focus { outline: 2px solid var(--primary); border-color: transparent; }
+.nl-heads-head { display: flex; align-items: center; justify-content: space-between; margin: 6px 0 10px; font-weight: 600; font-size: 14px; }
+.nl-head-row { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; background: #fbfcfe; }
+.nl-head-row .row { margin: 8px 0; }
+.nl-head-row textarea { margin-top: 8px; }
+.nl-head-row .btn.small.danger { margin-top: 8px; }
+
 /* 토스트 */
 .toast {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
