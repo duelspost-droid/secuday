@@ -27,6 +27,7 @@ const SCHEMA = {
   type: "object",
   properties: {
     subject: { type: "string", description: "뉴스레터/메일 제목 (예: '[정보보호의 날] 7월 — 휴가철 노린 스미싱 주의')" },
+    cover_emoji: { type: "string", description: "뉴스레터 대표 이모지 1개(이달 주제 상징, 예: 🛡️ 🎣 🔐 🎭)" },
     intro: { type: "string", description: "도입 인사말(마크다운). 임직원 공지에 어울리는 1~2문단" },
     headlines: {
       type: "array",
@@ -38,8 +39,9 @@ const SCHEMA = {
           summary: { type: "string", description: "핵심 요약 2~3문장과 우리 회사 관점 시사점" },
           source: { type: "string", description: "출처(매체명+시기, 예: '보안뉴스 2026.6')" },
           link: { type: "string", description: "원문 URL. 없으면 빈 문자열" },
+          emoji: { type: "string", description: "이 뉴스 주제에 어울리는 이모지 1개 (예: 🎣 🔐 🎭 💸 📵)" },
         },
-        required: ["title", "summary", "source", "link"],
+        required: ["title", "summary", "source", "link", "emoji"],
         additionalProperties: false,
       },
     },
@@ -49,14 +51,15 @@ const SCHEMA = {
       properties: {
         heading: { type: "string", description: "분석 소제목" },
         body: { type: "string", description: "마크다운 본문. 위협 배경 + 임직원 대응" },
+        emoji: { type: "string", description: "심층 분석 주제를 상징하는 이모지 1개" },
       },
-      required: ["heading", "body"],
+      required: ["heading", "body", "emoji"],
       additionalProperties: false,
     },
     tip: { type: "string", description: "이달의 보안 팁 또는 한 줄 퀴즈(실천 가능한 것)" },
     closing: { type: "string", description: "마무리 멘트 1~2문장" },
   },
-  required: ["subject", "intro", "headlines", "deep_dive", "tip", "closing"],
+  required: ["subject", "cover_emoji", "intro", "headlines", "deep_dive", "tip", "closing"],
   additionalProperties: false,
 };
 
@@ -64,7 +67,8 @@ const SYSTEM_PROMPT =
   "당신은 금융회사 정보보호팀의 보안 인식(Security Awareness) 뉴스레터 편집자입니다. " +
   "회사는 매월 1일을 '정보보호의 날'로 지정하고 임직원에게 보안 인식 뉴스레터를 발송합니다. " +
   "임직원이 끝까지 읽도록 간결하고 명확하며 약간 친근한 한국어로, 실천 가능한 정보 중심으로 작성하세요. " +
-  "보이스피싱, 스미싱, 랜섬웨어, 내부정보 유출, 공급망 공격, AI 딥페이크 등 최근 금융권 이슈를 반영합니다.";
+  "보이스피싱, 스미싱, 랜섬웨어, 내부정보 유출, 공급망 공격, AI 딥페이크 등 최근 금융권 이슈를 반영합니다. " +
+  "시각적 가독성을 위해 cover_emoji(대표 이모지 1개), 각 headline.emoji(뉴스별 이모지 1개), deep_dive.emoji를 주제에 어울리게 채웁니다. 이모지는 항목당 1개만, 과하지 않게 사용하세요.";
 
 function materialContext(material: any, monthLabel: string) {
   const cur = material?.current || {};
