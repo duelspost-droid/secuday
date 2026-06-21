@@ -100,6 +100,9 @@ function renderDetail() {
   const c = current.current;
   $("#detail-title").textContent = `${current.month} · ${c.title}`;
   $("#detail-badge").textContent = `v${c.version_no}`;
+  // 뉴스레터가 있는 달만 탭 노출
+  const nlTab = document.querySelector('.tab[data-tab="newsletter"]');
+  if (nlTab) nlTab.hidden = !c.newsletter;
   $("#content-theme").textContent = c.theme ? `테마: ${c.theme}` : "";
   $("#content-body").innerHTML = md(c.content);
   $("#content-rules").innerHTML = (c.rules || []).map((r) => `<li>${esc(r)}</li>`).join("");
@@ -117,6 +120,30 @@ function switchTab(name) {
   document.querySelectorAll(".tabpane").forEach((p) => (p.hidden = true));
   $(`#tab-${name}`).hidden = false;
   if (name === "history") loadVersions();
+  if (name === "newsletter") renderNewsletter();
+}
+
+/* ---------- 뉴스레터 (읽기 전용) ---------- */
+// 표준 포맷(newsletter-template.js)으로 미리보기 + PDF 다운로드. 관리자/이메일과 동일 포맷.
+function renderNewsletter() {
+  const nl = current.current && current.current.newsletter;
+  $("#nl-preview").innerHTML = nl
+    ? NewsletterTemplate.documentShell(
+        NewsletterTemplate.renderBody(nl),
+        NewsletterTemplate.monthLabel(current.month))
+    : `<div class="empty">아직 뉴스레터가 없습니다.</div>`;
+}
+
+/* 표준 포맷 A4 문서를 새 창에 열고 인쇄(PDF로 저장) */
+function downloadNewsletterPdf() {
+  const nl = current && current.current && current.current.newsletter;
+  if (!nl) { toast("뉴스레터가 없습니다.", true); return; }
+  const w = window.open("", "_blank");
+  if (!w) { toast("팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 시도하세요.", true); return; }
+  w.document.write(NewsletterTemplate.buildPrintDocument(nl, current.month));
+  w.document.close();
+  w.focus();
+  setTimeout(() => { try { w.print(); } catch (e) { /* 사용자가 직접 인쇄 가능 */ } }, 400);
 }
 
 /* ---------- 버전 이력 (열람만) ---------- */
