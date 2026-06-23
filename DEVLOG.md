@@ -203,3 +203,14 @@ git clone https://github.com/duelspost-droid/jbax-www.git
 - **공개 페이지**: 자료보기 탭·버전이력 탭 제거 → 뉴스레터 단일 화면. 포스터는 하단 흡수, 뉴스레터 없으면 자료(테마·본문·수칙)로 폴백.
 - **send-mailing(이메일)**: '오늘의 보안 수칙' 강조 블록 + 만화 4컷(이메일 안전 버전: 번호+화자+대사+캡션). ⚠️ **대시보드 재배포 필요**.
 - 데이터 호환: 기존 뉴스레터(format 없음)는 표준형으로 렌더(디스패처 폴백).
+
+## 2026-06-24 — NotebookLM 연계(리서치+오디오) · 7월호 게시
+
+- **7월호 만화 게시**(materials 2026-07, 현재 v5): 가족 사칭 메신저피싱 4컷 만화를 DB에 게시 → secuday.jbax.co.kr 공개. (만화/카드/표준/원페이저 중 comic)
+- **NotebookLM 소스 리서치 → 만화 반영**: [notebooklm-source-2026-07.md](notebooklm-source-2026-07.md)(소스 팩) + ASEC 기사(2026.5)를 NotebookLM 노트북에 넣어, 출처 각주가 달린 팩트체크·4컷 스크립트 확보. 결과를 7월호에 surgical 반영(v5):
+  - intro에 "최근 금융권 공격의 38%가 피싱"(ASEC), tips에 악성 첨부(HTML·PDF·XLS) 경고, stats/headlines에 ASEC 수치·기사 추가.
+  - 참고: 만화 렌더러는 intro·alert·tips·4컷만 노출(stats/headlines/deep_dive는 card/standard/onepager에서 노출).
+- **NotebookLM 오디오 오버뷰**: 한국어 "해커는 시스템보다 당신의 심리를 노린다"(15:41) 생성·다운로드(`Downloads/audio-2026-07.m4a`, 약 28MB).
+- **오디오 플레이어(휴면)**: 공개 상세 상단에 `newsletter.audio_url`이 있을 때만 뜨는 웹 전용 `<audio>` 플레이어 추가(`index.html #audio-section` + `public.js renderDetail` + `style.css .audio-*`, PR #13). PDF/인쇄엔 미포함.
+  - ⚠️ **이번 배포에서 오디오 파일은 제외**: 28MB 호스팅이 자동화 불가(브라우저 업로드 툴 10MB 한도, ffmpeg 부재, 공개 버킷 생성은 안전장치 차단). `audio_url` 미설정 → 플레이어 휴면.
+  - **추후 활성화법**: 공개 `posters` 버킷에 `audio-2026-07.m4a` 업로드 → 해당 월 버전의 `newsletter.audio_url`을 `https://nrdapzgtibbusvoaceuh.supabase.co/storage/v1/object/public/posters/audio-2026-07.m4a`로 채우면 플레이어 표시.
