@@ -30,6 +30,8 @@
       fl(); if(line.trim()==="") continue; html+='<p style="margin:7px 0">'+inl(line)+"</p>"; }
     fq(); fl(); return html;
   }
+  /* 인라인 마크다운(색 강제 없음) — 어두운 배경에서도 보이도록 굵게/기울임만 변환 */
+  function inlLight(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>"); }
 
   /* ---- 카테고리별 SVG 아이콘 ---- */
   var I = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">';
@@ -378,7 +380,7 @@ function renderComic(nl, label){
 
   if(val(nl.closing)){
     html+='<div style="padding:6px 24px 24px 24px;">'+
-      '<div style="background:'+NAVY+';color:#fff;border-radius:12px;padding:14px 16px;font-size:13.5px;line-height:1.55;break-inside:avoid;">'+esc(val(nl.closing))+'</div>'+
+      '<div style="background:'+NAVY+';color:#fff;border-radius:12px;padding:14px 16px;font-size:13.5px;line-height:1.55;break-inside:avoid;">'+inlLight(val(nl.closing))+'</div>'+
     '</div>';
   }
 
@@ -506,7 +508,7 @@ function renderCard(nl, label){
 
   if(val(nl.closing)){
     html+='<div style="padding:6px 24px 24px 24px;">'+
-      '<div style="background:'+NAVY+';color:#fff;border-radius:12px;padding:14px 16px;font-size:13.5px;line-height:1.55;break-inside:avoid;">'+esc(val(nl.closing))+'</div>'+
+      '<div style="background:'+NAVY+';color:#fff;border-radius:12px;padding:14px 16px;font-size:13.5px;line-height:1.55;break-inside:avoid;">'+inlLight(val(nl.closing))+'</div>'+
     '</div>';
   }
 
@@ -605,7 +607,7 @@ function renderOnepager(nl, label){
 
   if(val(nl.closing)){
     html+='<div style="padding:6px 20px 16px 20px;break-inside:avoid;">'+
-      '<div style="font-size:12.5px;color:'+MUT+';line-height:1.5;text-align:center;border-top:1px dashed '+LINE+';padding-top:12px;">'+esc(val(nl.closing))+'</div>'+
+      '<div style="font-size:12.5px;color:'+MUT+';line-height:1.5;text-align:center;border-top:1px dashed '+LINE+';padding-top:12px;">'+inlLight(val(nl.closing))+'</div>'+
     '</div>';
   } else {
     html+='<div style="height:12px;"></div>';
