@@ -183,6 +183,32 @@ function showCreate() {
   show("#view-form");
 }
 
+/* generate-poster 함수로 월간 자료(내용+A4 포스터)를 AI 자동 생성 → 새 버전으로 저장 */
+async function generateMaterial() {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1);
+  const month = prompt("AI로 자동 생성할 대상 월 (YYYY-MM):", d.toISOString().slice(0, 7));
+  if (!month) return;
+  if (!/^\d{4}-\d{2}$/.test(month.trim())) { toast("YYYY-MM 형식으로 입력하세요.", true); return; }
+  const m = month.trim();
+  const btn = $("#gen-btn");
+  const prev = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "생성 중…"; }
+  toast("AI가 내용·포스터를 생성 중입니다… 웹검색 포함 1~2분 걸립니다.");
+  try {
+    const { data, error } = await sb.functions.invoke("generate-poster", { body: { month: m } });
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    toast(`${m} 자료가 생성되었습니다.`);
+    const { data: mat } = await sb.from("materials").select("id").eq("month", m).maybeSingle();
+    if (mat && mat.id) openDetail(mat.id); else showList();
+  } catch (e) {
+    toast(e.message || "자동 생성 중 오류가 발생했습니다.", true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = prev; }
+  }
+}
+
 function showEdit() {
   if (!current) return;
   editingId = current.id;
