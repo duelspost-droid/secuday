@@ -101,6 +101,14 @@ function renderDetail() {
   $("#detail-title").textContent = `${current.month} · ${c.title}`;
   $("#detail-badge").textContent = `v${c.version_no}`;
   const nl = c.newsletter;
+  // 🎧 듣는 브리핑: 뉴스레터에 audio_url이 있으면 웹 전용 오디오 플레이어 (PDF엔 미포함)
+  const audioUrl = nl && typeof nl.audio_url === "string" && /^https?:\/\//i.test(nl.audio_url) ? nl.audio_url : "";
+  $("#audio-section").innerHTML = audioUrl
+    ? `<div class="audio-card">
+         <div class="audio-h">🎧 듣는 브리핑 <span class="audio-sub">NotebookLM 오디오 개요</span></div>
+         <audio controls preload="none" src="${esc(audioUrl)}"></audio>
+       </div>`
+    : "";
   $("#nl-preview").innerHTML = nl
     ? NewsletterTemplate.renderNewsletterFull(nl, NewsletterTemplate.monthLabel(current.month))
     : fallbackMaterialHTML(c);

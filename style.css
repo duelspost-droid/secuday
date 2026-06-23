@@ -254,6 +254,14 @@ main { max-width: 1080px; margin: 0 auto; padding: 24px; }
 .fallback-doc .content-body p { margin: 9px 0; }
 .fallback-doc .rules { padding-left: 20px; margin-top: 8px; } .fallback-doc .rules li { margin: 6px 0; }
 
+/* 🎧 듣는 브리핑 (웹 전용 오디오 플레이어) */
+.audio-section { max-width: 640px; margin: 0 auto 16px; }
+.audio-section:empty { display: none; }
+.audio-card { background: linear-gradient(135deg,#0a2a5c,#123f9e); color: #fff; border-radius: 14px; padding: 15px 18px; box-shadow: 0 8px 22px rgba(10,42,92,.18); }
+.audio-h { font-size: 15px; font-weight: 800; margin-bottom: 11px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.audio-sub { font-size: 11px; font-weight: 600; color: #bcd2ff; }
+.audio-card audio { width: 100%; height: 38px; }
+
 /* 토스트 */
 .toast {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
