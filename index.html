@@ -21,48 +21,17 @@
         <p id="empty-msg" class="empty" hidden>아직 등록된 자료가 없습니다.</p>
       </section>
 
-      <!-- 상세 (읽기 전용) -->
+      <!-- 상세 (읽기 전용) — 뉴스레터 단일 화면 -->
       <section id="view-detail" class="view" hidden>
         <div class="detail-head">
           <button class="btn small" onclick="showList()">← 목록</button>
           <h2 id="detail-title"></h2>
           <span id="detail-badge" class="badge"></span>
+          <div class="spacer"></div>
+          <button class="btn" onclick="downloadNewsletterPdf()">📄 PDF 다운로드</button>
         </div>
-
-        <nav class="tabs">
-          <button class="tab active" data-tab="content" onclick="switchTab('content')">자료 보기</button>
-          <button class="tab" data-tab="newsletter" onclick="switchTab('newsletter')" hidden>뉴스레터</button>
-          <button class="tab" data-tab="history" onclick="switchTab('history')">버전 이력</button>
-        </nav>
-
-        <div id="tab-content" class="tabpane">
-          <div class="nl-toolbar" style="margin-bottom:14px">
-            <button class="btn" onclick="downloadMaterialPdf()">📄 PDF 다운로드</button>
-          </div>
-          <div class="detail-grid">
-            <div id="poster-box" class="poster-box"></div>
-            <div>
-              <h3 id="content-theme" class="theme"></h3>
-              <div id="content-body" class="content-body"></div>
-              <h3>임직원 수칙</h3>
-              <ol id="content-rules" class="rules"></ol>
-            </div>
-          </div>
-        </div>
-
-        <div id="tab-newsletter" class="tabpane" hidden>
-          <div class="nl-toolbar">
-            <button class="btn" onclick="downloadNewsletterPdf()">📄 PDF 다운로드</button>
-          </div>
-          <div id="nl-preview" class="nl-preview"></div>
-        </div>
-
-        <div id="tab-history" class="tabpane" hidden>
-          <table class="vtable">
-            <thead><tr><th>버전</th><th>제목</th><th>변경 메모</th><th>구분</th><th>일시</th></tr></thead>
-            <tbody id="version-rows"></tbody>
-          </table>
-        </div>
+        <div id="nl-preview" class="nl-preview"></div>
+        <div id="poster-section" class="poster-section"></div>
       </section>
     </main>
   </div>

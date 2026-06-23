@@ -190,3 +190,16 @@ git clone https://github.com/duelspost-droid/jbax-www.git
 - `admin.js generateMaterial()`: 대상 월(YYYY-MM, 기본=다음 달) 입력 → `sb.functions.invoke("generate-poster", {body:{month}})` → 함수가 웹검색으로 이달의 테마·안내문·수칙 + **A4 포스터 SVG**를 생성해 `posters` 버킷 업로드 후 `create_material`/`add_version`(있으면)으로 **새 버전 저장** → 생성된 자료를 자동으로 열어줌. 로딩 상태 표시(1~2분 소요).
 - 새 버전으로 기록되므로 기존 버전은 이력에 보존(비파괴). 함수·`ANTHROPIC_API_KEY`는 이미 배포/설정돼 있어 **추가 배포 불필요**(프런트만 PR 머지로 반영).
 - 참고로 0004 `recipients`(메일링 명단) 테이블은 추가됐으나 아직 **명단 관리 UI·발송 버튼 미구현**, `RESEND_API_KEY` 미설정 → 메일 발송은 다음 작업.
+
+## 2026-06-23 — 뉴스레터 멀티포맷 + SVG 4컷 만화
+
+공개 페이지를 **뉴스레터 단일 화면**으로 통합하고, 뉴스레터를 **4개 포맷 선택형**으로 확장. '오늘의 보안 수칙'을 전 포맷 전면에 배치.
+
+- **포맷 4종**(`newsletter.format`): `comic`(💬 만화형·SVG 4컷+말풍선), `card`(🃏 카드/인포그래픽), `standard`(🛡️ 표준형 고도화), `onepager`(📄 한장 요약). `newsletter-template.js`에 `renderNewsletterFull` 디스패처 + `renderComic/renderCard/renderOnepager/renderStandard`. 전부 인라인 style + **코드로 그린 인라인 SVG**(미리보기=PDF 동일).
+  - 만화: `scene`(phone-call/phone-pressure/money-loss/shield-verify 등) + `mood`(neutral/worried/shocked/relieved)로 캐릭터·표정·소품·말풍선을 코드로 렌더. 서사 상황→함정→피해→수칙(마지막 컷 초록 안전).
+  - 렌더러는 멀티에이전트 워크플로(3개 창작방향 → 심사 → 합성, best=flat-corporate)로 생성 후 통합·DOM/스크린샷 검증.
+- **generate-newsletter**: 요청 `format` 수용 + `comic.panels` 스키마(comic이면 필수) + 포맷별 프롬프트. 응답에 `format` 강제 주입. ⚠️ **대시보드 재배포 필요**(Edge Function은 머지로 자동배포 안 됨).
+- **관리자 UI**: 툴바 포맷 셀렉터 + 생성/AI수정에 format 전달. 수동편집에 포맷·**오늘의 보안수칙(tips)**·**만화 4컷**(scene/mood/화자/대사/캡션) 편집 추가. 폼에 없는 필드(stats/alert/cover_emoji)는 병합 보존.
+- **공개 페이지**: 자료보기 탭·버전이력 탭 제거 → 뉴스레터 단일 화면. 포스터는 하단 흡수, 뉴스레터 없으면 자료(테마·본문·수칙)로 폴백.
+- **send-mailing(이메일)**: '오늘의 보안 수칙' 강조 블록 + 만화 4컷(이메일 안전 버전: 번호+화자+대사+캡션). ⚠️ **대시보드 재배포 필요**.
+- 데이터 호환: 기존 뉴스레터(format 없음)는 표준형으로 렌더(디스패처 폴백).

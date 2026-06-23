@@ -100,6 +100,14 @@
         <div id="tab-newsletter" class="tabpane" hidden>
           <p class="hint">AI가 이번 달 자료를 바탕으로 임직원 보안 뉴스레터를 작성합니다. 생성·수정 후 검토하여 새 버전으로 저장하세요.</p>
           <div class="nl-toolbar">
+            <label class="nl-fmt">포맷
+              <select id="nl-format">
+                <option value="comic" selected>💬 만화형</option>
+                <option value="card">🃏 카드/인포그래픽</option>
+                <option value="standard">🛡️ 표준형</option>
+                <option value="onepager">📄 원페이저</option>
+              </select>
+            </label>
             <button class="btn primary" id="nl-generate" onclick="generateNewsletter()">✨ AI 자동 생성</button>
             <button class="btn" onclick="aiEditNewsletter()">🤖 AI로 수정</button>
             <button class="btn" onclick="editNewsletter()">✏️ 수동 편집</button>
