@@ -183,3 +183,10 @@ git clone https://github.com/duelspost-droid/jbax-www.git
 ```
 - 관련 레포 모두 GitHub `duelspost-droid` 계정. 추가 비밀키 불필요(config.js의 publishable key만 공개로 사용, RLS 보호).
 - `samples/`에 생성 예시(2026-07, 2026-08) 보관.
+
+## 2026-06-23 — 포스터 자동 생성 UI 연동 (PR #9)
+
+- 배포돼 있으나 호출 UI가 없던 **`generate-poster`** Edge Function을 관리자 상단바 **`✨ AI 자동 생성`** 버튼(`admin.html #gen-btn`)에 연결.
+- `admin.js generateMaterial()`: 대상 월(YYYY-MM, 기본=다음 달) 입력 → `sb.functions.invoke("generate-poster", {body:{month}})` → 함수가 웹검색으로 이달의 테마·안내문·수칙 + **A4 포스터 SVG**를 생성해 `posters` 버킷 업로드 후 `create_material`/`add_version`(있으면)으로 **새 버전 저장** → 생성된 자료를 자동으로 열어줌. 로딩 상태 표시(1~2분 소요).
+- 새 버전으로 기록되므로 기존 버전은 이력에 보존(비파괴). 함수·`ANTHROPIC_API_KEY`는 이미 배포/설정돼 있어 **추가 배포 불필요**(프런트만 PR 머지로 반영).
+- 참고로 0004 `recipients`(메일링 명단) 테이블은 추가됐으나 아직 **명단 관리 UI·발송 버튼 미구현**, `RESEND_API_KEY` 미설정 → 메일 발송은 다음 작업.
