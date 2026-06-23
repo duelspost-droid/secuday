@@ -232,6 +232,28 @@ main { max-width: 1080px; margin: 0 auto; padding: 24px; }
 .nl-head-row textarea { margin-top: 8px; }
 .nl-head-row .btn.small.danger { margin-top: 8px; }
 
+/* 포맷 선택(툴바) */
+.nl-fmt { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.nl-fmt select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; }
+
+/* 만화 4컷 편집 */
+.nl-panel-row { display: flex; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; background: #fbfcfe; }
+.nl-panel-no { flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg,#1a56db,#0a2a5c); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.nl-panel-fields { flex: 1; min-width: 0; }
+.nl-panel-fields .row { margin: 0 0 8px; }
+.nl-panel-fields label { margin-bottom: 0; }
+.nl-panel-fields .btn.small.danger { margin-top: 4px; }
+
+/* 공개: 이달의 포스터 / 폴백 자료 */
+.poster-section { max-width: 640px; margin: 18px auto 0; text-align: center; }
+.poster-section:empty { display: none; }
+.poster-h { font-size: 15px; color: #0a2a5c; margin: 0 0 10px; }
+.poster-section img { max-width: 100%; border: 1px solid var(--border); border-radius: 10px; }
+.fallback-doc { max-width: 640px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 24px 26px; line-height: 1.75; }
+.fallback-doc .theme { color: var(--primary); font-weight: 700; margin-bottom: 12px; }
+.fallback-doc .content-body p { margin: 9px 0; }
+.fallback-doc .rules { padding-left: 20px; margin-top: 8px; } .fallback-doc .rules li { margin: 6px 0; }
+
 /* 토스트 */
 .toast {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);

@@ -53,6 +53,18 @@ function buildNewsletterEmail(nl: any, monthLabel: string) {
     </div>`;
   }).join("");
   const dd = nl.deep_dive || {};
+  const tips = Array.isArray(nl.tips) ? nl.tips.filter(Boolean) : [];
+  const tipsBlock = tips.length ? `<div style="background:#f0faf5;border:1px solid #bbe6cf;border-radius:12px;padding:16px 18px;margin:22px 0">
+      <div style="font-weight:800;color:#0f6e56;margin-bottom:10px;font-size:15px">✅ 오늘의 보안 수칙</div>
+      ${tips.map((t: string) => `<div style="display:flex;gap:8px;margin:7px 0;font-size:14px;line-height:1.6"><span style="color:#16a34a;font-weight:800">✔</span><span>${esc(t)}</span></div>`).join("")}
+    </div>` : "";
+  const panels = (nl.comic && Array.isArray(nl.comic.panels)) ? nl.comic.panels : [];
+  const numerals = ["①", "②", "③", "④", "⑤", "⑥"];
+  const comicBlock = panels.length ? `<h3 style="border-bottom:2px solid #dde3ec;padding-bottom:6px;margin:26px 0 12px;color:#0a2a5c">💬 4컷으로 보는 이달의 위협</h3>
+      ${panels.map((p: any, i: number) => `<div style="border:1px solid #dde3ec;border-radius:10px;padding:12px 14px;margin:10px 0;background:#fbfcfe">
+        <div style="font-size:12px;color:#1a56db;font-weight:800">${numerals[i] || (i + 1)} ${esc(p.caption || "")}</div>
+        ${p.speech ? `<div style="margin-top:6px;font-size:14px;line-height:1.6"><b>${esc(p.speaker || "")}</b> &ldquo;${esc(p.speech)}&rdquo;</div>` : ""}
+      </div>`).join("")}` : "";
   return `<!DOCTYPE html><html lang="ko"><body style="margin:0;background:#f4f6fa;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#1f2937">
   <div style="max-width:640px;margin:0 auto;background:#fff">
     <div style="background:#0a2a5c;color:#fff;padding:22px 28px">
@@ -62,6 +74,8 @@ function buildNewsletterEmail(nl: any, monthLabel: string) {
     <div style="padding:28px">
       <h1 style="font-size:22px;color:#1a56db;margin:0 0 14px;line-height:1.4">${esc(nl.subject)}</h1>
       <div style="font-size:15px;line-height:1.75">${mdToHtml(nl.intro)}</div>
+      ${tipsBlock}
+      ${comicBlock}
       ${heads ? `<h3 style="border-bottom:2px solid #dde3ec;padding-bottom:6px;margin:26px 0 12px;color:#0a2a5c">📰 이달의 보안 뉴스</h3>${heads}` : ""}
       ${dd.body ? `<h3 style="border-bottom:2px solid #dde3ec;padding-bottom:6px;margin:26px 0 12px;color:#0a2a5c">🔎 ${esc(dd.heading || "이달의 심층 분석")}</h3><div style="font-size:15px;line-height:1.75">${mdToHtml(dd.body)}</div>` : ""}
       ${nl.tip ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:14px 16px;margin:20px 0;font-size:14px;line-height:1.7"><strong style="color:#b45309">💡 이달의 팁</strong> ${esc(nl.tip)}</div>` : ""}

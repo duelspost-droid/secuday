@@ -93,49 +93,39 @@ async function openDetail(id) {
   current = { ...m, current: v };
   renderDetail();
   show("#view-detail");
-  switchTab("content");
 }
 
+// 뉴스레터 단일 화면: 뉴스레터(있으면) → 없으면 자료 본문으로 대체, 하단에 이달의 포스터.
 function renderDetail() {
   const c = current.current;
   $("#detail-title").textContent = `${current.month} · ${c.title}`;
   $("#detail-badge").textContent = `v${c.version_no}`;
-  // 뉴스레터가 있는 달만 탭 노출
-  const nlTab = document.querySelector('.tab[data-tab="newsletter"]');
-  if (nlTab) nlTab.hidden = !c.newsletter;
-  $("#content-theme").textContent = c.theme ? `테마: ${c.theme}` : "";
-  $("#content-body").innerHTML = md(c.content);
-  $("#content-rules").innerHTML = (c.rules || []).map((r) => `<li>${esc(r)}</li>`).join("");
-  const url = posterUrl(c.poster_path);
-  $("#poster-box").innerHTML = c.poster_path
-    ? (c.poster_path.endsWith(".pdf")
-        ? `<a class="btn" href="${url}" target="_blank">📄 포스터 PDF 열기</a>`
-        : `<img src="${url}" alt="포스터">`)
-    : `<div class="no-poster big">🛡️<br><small>포스터 없음</small></div>`;
-}
-
-function switchTab(name) {
-  document.querySelectorAll(".tab").forEach((t) =>
-    t.classList.toggle("active", t.dataset.tab === name));
-  document.querySelectorAll(".tabpane").forEach((p) => (p.hidden = true));
-  $(`#tab-${name}`).hidden = false;
-  if (name === "history") loadVersions();
-  if (name === "newsletter") renderNewsletter();
-}
-
-/* ---------- 뉴스레터 (읽기 전용) ---------- */
-// 표준 포맷(newsletter-template.js)으로 미리보기 + PDF 다운로드. 관리자/이메일과 동일 포맷.
-function renderNewsletter() {
-  const nl = current.current && current.current.newsletter;
+  const nl = c.newsletter;
   $("#nl-preview").innerHTML = nl
     ? NewsletterTemplate.renderNewsletterFull(nl, NewsletterTemplate.monthLabel(current.month))
-    : `<div class="empty">아직 뉴스레터가 없습니다.</div>`;
+    : fallbackMaterialHTML(c);
+  const url = posterUrl(c.poster_path);
+  $("#poster-section").innerHTML = c.poster_path
+    ? (c.poster_path.endsWith(".pdf")
+        ? `<h3 class="poster-h">📌 이달의 포스터</h3><a class="btn" href="${url}" target="_blank">📄 포스터 PDF 열기</a>`
+        : `<h3 class="poster-h">📌 이달의 포스터</h3><img src="${url}" alt="포스터">`)
+    : "";
+}
+
+// 뉴스레터가 아직 없는 달: 자료(테마·본문·수칙)를 간단히 표시
+function fallbackMaterialHTML(c) {
+  const rules = (c.rules || []).map((r) => `<li>${esc(r)}</li>`).join("");
+  return `<div class="fallback-doc">
+    ${c.theme ? `<div class="theme">테마: ${esc(c.theme)}</div>` : ""}
+    <div class="content-body">${md(c.content)}</div>
+    ${rules ? `<h3>오늘의 보안 수칙</h3><ol class="rules">${rules}</ol>` : ""}
+  </div>`;
 }
 
 /* 표준 포맷 A4 문서를 새 창에 열고 인쇄(PDF로 저장) */
 function downloadNewsletterPdf() {
   const nl = current && current.current && current.current.newsletter;
-  if (!nl) { toast("뉴스레터가 없습니다.", true); return; }
+  if (!nl) { downloadMaterialPdf(); return; }  // 뉴스레터 없으면 자료 PDF로 대체
   const w = window.open("", "_blank");
   if (!w) { toast("팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 시도하세요.", true); return; }
   w.document.write(NewsletterTemplate.buildPrintDocument(nl, current.month));

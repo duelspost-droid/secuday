@@ -10,6 +10,7 @@ let editingId = null;      // 편집 중인 자료 id (null이면 신규)
 let lastProposal = null;   // 마지막 AI 수정안
 let nlDraft = null;        // 저장 전 작업 중인 뉴스레터 초안
 let nlDraftSource = "ai";  // 초안 출처 (ai | manual) — 저장 시 change_source로 사용
+let nlFormBase = null;     // 수동 편집 시 원본(폼에 없는 필드 보존용)
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -532,9 +533,19 @@ function renderNewsletter() {
     ? "⚠️ 저장되지 않은 초안입니다. 검토 후 ‘새 버전으로 저장’을 누르세요."
     : (saved ? `현재 뉴스레터 (v${current.current.version_no} 기준)` : "");
 
+  // 포맷 셀렉터를 현재 뉴스레터 포맷에 동기화
+  const fmtSel = $("#nl-format");
+  if (fmtSel && showNl && showNl.format) fmtSel.value = showNl.format;
+
   $("#nl-preview").innerHTML = showNl
     ? renderNewsletterHTML(showNl)
-    : `<div class="empty">아직 뉴스레터가 없습니다. ‘AI 자동 생성’으로 시작하세요.</div>`;
+    : `<div class="empty">아직 뉴스레터가 없습니다. 포맷을 고르고 ‘AI 자동 생성’으로 시작하세요.</div>`;
+}
+
+// 툴바에서 선택된 포맷 (없으면 standard)
+function selectedFormat() {
+  const s = $("#nl-format");
+  return (s && s.value) || "standard";
 }
 
 // 미리보기는 표준 템플릿(newsletter-template.js)에 위임 — PDF와 동일(인라인 SVG) 포맷.
@@ -578,11 +589,12 @@ async function generateNewsletter() {
   if (!current) return;
   const btn = $("#nl-generate");
   const prev = btn.textContent;
+  const fmt = selectedFormat();
   btn.disabled = true;
   btn.textContent = "생성 중… (웹 검색, 최대 1분)";
   try {
     const { data, error } = await sb.functions.invoke("generate-newsletter", {
-      body: { month: current.month, material: current },
+      body: { month: current.month, material: current, format: fmt },
     });
     if (error) throw error;
     if (data.error) throw new Error(data.error);
@@ -609,7 +621,7 @@ async function aiEditNewsletter() {
   toast("AI가 수정 중…");
   try {
     const { data, error } = await sb.functions.invoke("generate-newsletter", {
-      body: { month: current.month, material: current, current: base, instruction },
+      body: { month: current.month, material: current, current: base, instruction, format: selectedFormat() },
     });
     if (error) throw error;
     if (data.error) throw new Error(data.error);
@@ -626,7 +638,7 @@ async function aiEditNewsletter() {
 function editNewsletter() {
   if (!current) return;
   const base = nlDraft || currentNewsletter() ||
-    { subject: "", intro: "", headlines: [], deep_dive: { heading: "", body: "" }, tip: "", closing: "" };
+    { subject: "", format: selectedFormat(), intro: "", tips: [], headlines: [], deep_dive: { heading: "", body: "" }, comic: { panels: [] }, tip: "", closing: "" };
   $("#nl-preview").innerHTML = "";
   $("#nl-status").textContent = "";
   $("#nl-draft-actions").hidden = true;
@@ -651,11 +663,53 @@ function addHeadlineRow() {
   $("#nlf-headlines").insertAdjacentHTML("beforeend", headlineRowHTML());
 }
 
+const SCENE_OPTS = ["phone-call", "phone-pressure", "email-phishing", "link-trap", "money-loss", "data-leak", "ransomware-lock", "hacker", "shield-verify", "double-check"];
+const MOOD_OPTS = ["neutral", "worried", "shocked", "relieved"];
+const PANEL_NO = ["①", "②", "③", "④", "⑤", "⑥"];
+
+function optionList(opts, sel) {
+  return opts.map((o) => `<option value="${o}"${o === sel ? " selected" : ""}>${o}</option>`).join("");
+}
+
+function panelRowHTML(p, i) {
+  p = p || { scene: SCENE_OPTS[0], mood: "neutral", speaker: "", speech: "", caption: "" };
+  return `<div class="nl-panel-row">
+    <div class="nl-panel-no">${PANEL_NO[i] || (i + 1)}</div>
+    <div class="nl-panel-fields">
+      <div class="row">
+        <label>장면 <select class="nlp-scene">${optionList(SCENE_OPTS, p.scene)}</select></label>
+        <label>표정 <select class="nlp-mood">${optionList(MOOD_OPTS, p.mood)}</select></label>
+        <input class="nlp-speaker" type="text" placeholder="화자(예: 사칭범)" value="${escAttr(p.speaker)}">
+      </div>
+      <input class="nlp-speech" type="text" placeholder="말풍선 대사" value="${escAttr(p.speech)}">
+      <input class="nlp-caption" type="text" placeholder="컷 캡션(narration)" value="${escAttr(p.caption)}">
+      <button type="button" class="btn small danger" onclick="this.closest('.nl-panel-row').remove()">컷 삭제</button>
+    </div>
+  </div>`;
+}
+
+function addPanelRow() {
+  const pc = $("#nlf-panels");
+  pc.insertAdjacentHTML("beforeend", panelRowHTML(null, pc.children.length));
+}
+
 function renderNewsletterForm(nl) {
+  nlFormBase = nl || {};
   const dd = nl.deep_dive || {};
+  const fmt = nl.format || selectedFormat() || "standard";
+  const tipsText = (Array.isArray(nl.tips) ? nl.tips : []).join("\n");
   $("#nl-form-fields").innerHTML = `
+    <label>포맷
+      <select id="nlf-format">
+        <option value="comic"${fmt === "comic" ? " selected" : ""}>💬 만화형</option>
+        <option value="card"${fmt === "card" ? " selected" : ""}>🃏 카드/인포그래픽</option>
+        <option value="standard"${fmt === "standard" ? " selected" : ""}>🛡️ 표준형</option>
+        <option value="onepager"${fmt === "onepager" ? " selected" : ""}>📄 원페이저</option>
+      </select>
+    </label>
     <label>제목 <input id="nlf-subject" type="text" value="${escAttr(nl.subject)}"></label>
     <label>도입 인사말 (마크다운) <textarea id="nlf-intro" rows="3">${esc(nl.intro)}</textarea></label>
+    <label>오늘의 보안 수칙 (한 줄에 하나·전 포맷 공통 핵심) <textarea id="nlf-tips" rows="4" placeholder="기관 사칭 전화는 끊고 공식 번호로 직접 확인한다&#10;OTP·인증번호는 누구에게도 알려주지 않는다">${esc(tipsText)}</textarea></label>
     <div class="nl-heads-head">
       <span>이달의 보안 뉴스</span>
       <button type="button" class="btn small" onclick="addHeadlineRow()">+ 헤드라인 추가</button>
@@ -663,10 +717,20 @@ function renderNewsletterForm(nl) {
     <div id="nlf-headlines"></div>
     <label>심층 분석 소제목 <input id="nlf-dd-heading" type="text" value="${escAttr(dd.heading)}"></label>
     <label>심층 분석 본문 (마크다운) <textarea id="nlf-dd-body" rows="5">${esc(dd.body)}</textarea></label>
-    <label>이달의 팁 <input id="nlf-tip" type="text" value="${escAttr(nl.tip)}"></label>
-    <label>마무리 멘트 <textarea id="nlf-closing" rows="2">${esc(nl.closing)}</textarea></label>`;
+    <label>이달의 팁(한 줄 요약) <input id="nlf-tip" type="text" value="${escAttr(nl.tip)}"></label>
+    <label>마무리 멘트 <textarea id="nlf-closing" rows="2">${esc(nl.closing)}</textarea></label>
+    <div class="nl-heads-head">
+      <span>만화 4컷 (만화형일 때 사용 — 상황→함정→피해→수칙)</span>
+      <button type="button" class="btn small" onclick="addPanelRow()">+ 컷 추가</button>
+    </div>
+    <div id="nlf-panels"></div>`;
   const cont = $("#nlf-headlines");
   (nl.headlines || []).forEach((h) => cont.insertAdjacentHTML("beforeend", headlineRowHTML(h)));
+  const pc = $("#nlf-panels");
+  const panels = (nl.comic && Array.isArray(nl.comic.panels) && nl.comic.panels.length)
+    ? nl.comic.panels
+    : [null, null, null, null];
+  panels.forEach((p, i) => pc.insertAdjacentHTML("beforeend", panelRowHTML(p, i)));
 }
 
 function collectNewsletterForm() {
@@ -676,13 +740,26 @@ function collectNewsletterForm() {
     source: r.querySelector(".nlh-source").value.trim(),
     link: r.querySelector(".nlh-link").value.trim(),
   })).filter((h) => h.title || h.summary);
+  const tips = $("#nlf-tips").value.split("\n").map((s) => s.trim()).filter(Boolean);
+  const panels = [...document.querySelectorAll("#nlf-panels .nl-panel-row")].map((r) => ({
+    scene: r.querySelector(".nlp-scene").value,
+    mood: r.querySelector(".nlp-mood").value,
+    speaker: r.querySelector(".nlp-speaker").value.trim(),
+    speech: r.querySelector(".nlp-speech").value.trim(),
+    caption: r.querySelector(".nlp-caption").value.trim(),
+  })).filter((p) => p.speech || p.caption);
+  const base = nlFormBase || {};
   return {
+    ...base,
+    format: $("#nlf-format").value,
     subject: $("#nlf-subject").value.trim(),
     intro: $("#nlf-intro").value,
+    tips,
     headlines: heads,
-    deep_dive: { heading: $("#nlf-dd-heading").value.trim(), body: $("#nlf-dd-body").value },
+    deep_dive: { ...(base.deep_dive || {}), heading: $("#nlf-dd-heading").value.trim(), body: $("#nlf-dd-body").value },
     tip: $("#nlf-tip").value.trim(),
     closing: $("#nlf-closing").value,
+    comic: { ...(base.comic || {}), panels },
   };
 }
 

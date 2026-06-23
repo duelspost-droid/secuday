@@ -27,6 +27,7 @@ const SCHEMA = {
   type: "object",
   properties: {
     subject: { type: "string", description: "뉴스레터/메일 제목 (예: '[정보보호의 날] 7월 — 휴가철 노린 스미싱 주의')" },
+    format: { type: "string", description: "뉴스레터 표현 포맷: comic|card|standard|onepager 중 하나(요청된 포맷을 그대로 둔다)" },
     cover_emoji: { type: "string", description: "뉴스레터 대표 이모지 1개(이달 주제 상징, 예: 🛡️ 🎣 🔐 🎭)" },
     alert: { type: "string", description: "상단 경고 배너 한 줄(이달 위협의 핵심 경고, 예: '아는 얼굴·목소리도 가짜일 수 있습니다')" },
     stats: {
@@ -74,8 +75,32 @@ const SCHEMA = {
     tip: { type: "string", description: "이달의 보안 팁 한 줄(요약용)" },
     tips: { type: "array", description: "임직원 실천 보안 수칙 4~5개(각 30~45자, 명령형·구체적)", items: { type: "string" } },
     closing: { type: "string", description: "마무리 멘트 1~2문장" },
+    comic: {
+      type: "object",
+      description: "format이 'comic'일 때 채울 4컷 만화 데이터(다른 포맷이면 생략 가능)",
+      properties: {
+        panels: {
+          type: "array",
+          description: "정확히 4컷. 서사: 상황→함정→피해→수칙(마지막 컷은 안전한 해결).",
+          items: {
+            type: "object",
+            properties: {
+              scene: { type: "string", description: "장면 키: phone-call|phone-pressure|email-phishing|link-trap|money-loss|data-leak|ransomware-lock|hacker|shield-verify|double-check 중 가장 적합한 것" },
+              mood: { type: "string", description: "인물 표정: neutral|worried|shocked|relieved" },
+              speaker: { type: "string", description: "말풍선 화자(예: 사칭범, 직원, 동료)" },
+              speech: { type: "string", description: "말풍선 대사 한 문장(짧은 구어체)" },
+              caption: { type: "string", description: "컷 하단 narration 캡션 한 문장" },
+            },
+            required: ["scene", "mood", "speaker", "speech", "caption"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["panels"],
+      additionalProperties: false,
+    },
   },
-  required: ["subject", "cover_emoji", "alert", "stats", "intro", "headlines", "deep_dive", "tip", "tips", "closing"],
+  required: ["subject", "format", "cover_emoji", "alert", "stats", "intro", "headlines", "deep_dive", "tip", "tips", "closing"],
   additionalProperties: false,
 };
 
@@ -86,7 +111,16 @@ const SYSTEM_PROMPT =
   "보이스피싱, 스미싱, 랜섬웨어, 내부정보 유출, 공급망 공격, AI 딥페이크 등 최근 금융권 이슈를 반영합니다. " +
   "시각적 가독성을 위해 cover_emoji·각 headline.emoji·deep_dive.emoji를 주제에 어울리게 채웁니다(항목당 1개). " +
   "각 headline.category는 deepfake|voice|phishing|supplychain|insider|ransomware|vuln|dataleak|general 중 가장 맞는 것을 고릅니다. " +
-  "alert는 한 줄 경고 배너, stats는 헤드라인의 실제 수치 3개(피해액·유출 규모·과징금 등 임팩트 있는 숫자), tips는 임직원이 바로 실천할 보안 수칙 4~5개로 채웁니다.";
+  "alert는 한 줄 경고 배너, stats는 헤드라인의 실제 수치 3개(피해액·유출 규모·과징금 등 임팩트 있는 숫자), tips는 임직원이 바로 실천할 보안 수칙 4~5개로 채웁니다. " +
+  "tips(오늘의 보안 수칙)는 어느 포맷에서나 핵심이므로 가장 명확하고 실천 가능하게 작성합니다.";
+
+// 포맷별 작성 가이드 (요청 포맷에 따라 강조점이 달라진다)
+const FORMAT_GUIDE: Record<string, string> = {
+  comic: "4컷 만화 중심. comic.panels를 정확히 4컷(상황→함정→피해→수칙)으로 반드시 채우고, 대사(speech)·캡션(caption)은 짧고 쉬운 구어체로. 각 컷 scene/mood를 위협에 맞게 고르고, 마지막 컷은 '오늘의 보안 수칙'으로 안전하게 마무리한다.",
+  card: "수칙 카드/인포그래픽 중심. tips를 또렷한 실천 카드로, stats(숫자)를 인상적으로 제시한다. 문장은 짧게.",
+  standard: "표준 뉴스레터. 헤드라인·심층분석·수칙을 충실히 담되 가독성을 우선한다.",
+  onepager: "A4 한 장 요약. tips(핵심 수칙)와 한 줄 경고 중심으로 매우 간결하게. 심층분석은 짧게 압축한다.",
+};
 
 function materialContext(material: any, monthLabel: string) {
   const cur = material?.current || {};
@@ -108,7 +142,7 @@ Deno.serve(async (req) => {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) return json({ error: "서버에 ANTHROPIC_API_KEY가 설정되지 않았습니다." }, 503);
 
-  let body: { month?: string; material?: any; current?: any; instruction?: string };
+  let body: { month?: string; material?: any; current?: any; instruction?: string; format?: string };
   try {
     body = await req.json();
   } catch {
@@ -120,6 +154,9 @@ Deno.serve(async (req) => {
   const [yy, mm] = month.split("-");
   const monthLabel = `${yy}년 ${Number(mm)}월`;
   const isEdit = !!(body.current && body.instruction?.trim());
+  const ALLOWED_FORMATS = ["comic", "card", "standard", "onepager"];
+  let fmt = body.format || (body.current && body.current.format) || "standard";
+  if (!ALLOWED_FORMATS.includes(fmt)) fmt = "standard";
 
   const ctx = materialContext(body.material, monthLabel);
 
@@ -130,16 +167,24 @@ Deno.serve(async (req) => {
     userMessage =
       `${ctx}\n\n[현재 뉴스레터(JSON)]\n${JSON.stringify(body.current, null, 2)}\n\n` +
       `[수정 요청]\n${body.instruction!.trim()}\n\n` +
+      `[표현 포맷] ${fmt} — ${FORMAT_GUIDE[fmt]}\n` +
       `위 뉴스레터를 요청대로 수정해 전체 뉴스레터를 다시 작성하세요. ` +
-      `요청과 무관한 부분은 그대로 유지하세요.`;
+      `요청과 무관한 부분은 그대로 유지하고, format은 '${fmt}'로 유지하세요.` +
+      (fmt === "comic" ? ` comic.panels(4컷)도 유지/보강하세요.` : "");
   } else {
     userMessage =
       `${ctx}\n\n` +
+      `[표현 포맷] ${fmt} — ${FORMAT_GUIDE[fmt]}\n` +
       `${monthLabel} 정보보호의 날 임직원 보안 뉴스레터를 작성하세요. ` +
       `위 '이번 달 자료'의 테마를 중심에 두되, 최신 금융권 보안 위협을 web search로 보강해 ` +
-      `실제 보도 사례 기반의 헤드라인 2~4건과 심층 분석 한 꼭지, 이달의 팁을 채우세요.`;
+      `실제 보도 사례 기반의 헤드라인 2~4건과 심층 분석 한 꼭지, 이달의 팁을 채우세요. ` +
+      `format은 반드시 '${fmt}'로 설정하세요.`;
     tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
   }
+
+  // 요청 포맷이 comic이면 comic 데이터를 필수로 강제한다
+  const schema = JSON.parse(JSON.stringify(SCHEMA));
+  if (fmt === "comic" && !schema.required.includes("comic")) schema.required.push("comic");
 
   try {
     const client = new Anthropic({ apiKey });
@@ -150,10 +195,11 @@ Deno.serve(async (req) => {
       system: SYSTEM_PROMPT,
       ...(tools ? { tools } : {}),
       messages: [{ role: "user", content: userMessage }],
-      output_config: { format: { type: "json_schema", schema: SCHEMA } },
+      output_config: { format: { type: "json_schema", schema } },
     } as any);
     const textBlock = (resp.content as any[]).find((b) => b.type === "text");
     const newsletter = JSON.parse(textBlock.text);
+    newsletter.format = fmt; // 모델이 빠뜨려도 요청 포맷으로 고정
     return json({ ok: true, month, newsletter });
   } catch (e) {
     return json({ error: `뉴스레터 생성 실패: ${(e as any)?.message ?? e}` }, 502);
