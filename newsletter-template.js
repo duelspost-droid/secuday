@@ -680,6 +680,44 @@ function renderOnepager(nl, label){
     return renderStandard(nl, label);
   }
 
+  /* ====== 만화로 보는 보안수칙 (수칙 → 만화풍 카드, 코드 SVG) — 공개 페이지 섹션용 ====== */
+  function rulesSceneSpec(t){
+    if(/신고|112/.test(t)) return "report";
+    if(/신분증|계좌|비밀번호|사진|개인정보/.test(t)) return "noinfo";
+    if(/링크|앱|첨부|설치|클릭|URL/i.test(t)) return "nolink";
+    if(/의심|신호|수상|사칭|이상/.test(t)) return "suspect";
+    if(/전화|통화|확인|유선|직접/.test(t)) return "verify";
+    return "general";
+  }
+  function rulesScene(k){
+    var V={
+      verify:{bg:"#eef3fb",badge:"#1a56db",chip:["✓ 이렇게","#e7f7ee","#0f7a43","#b7e6cb"],svg:'<g transform="translate(56,70)"><ellipse cx="0" cy="44" rx="26" ry="19" fill="#1a56db"/><circle cx="0" cy="4" r="22" fill="#f7d9b8"/><path d="M-22 -2 Q0 -28 22 -2 Q16 -13 0 -15 Q-16 -13 -22 -2 Z" fill="#0a2a5c"/><circle cx="-7" cy="2" r="2.4" fill="#1f2937"/><circle cx="7" cy="2" r="2.4" fill="#1f2937"/><path d="M-6 11 Q0 15 6 11" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/></g><g transform="translate(150,48)"><rect x="-18" y="-26" width="36" height="56" rx="7" fill="#0a2a5c"/><rect x="-14" y="-20" width="28" height="40" rx="3" fill="#cfe0ff"/><circle cx="0" cy="-2" r="9" fill="#fff"/><text x="0" y="2" font-size="11" font-weight="800" fill="#c0392b" text-anchor="middle">₩</text></g><g transform="translate(196,96)"><circle cx="0" cy="0" r="17" fill="#16a34a"/><path d="M-7 0 L-2 6 L8 -6" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>'},
+      noinfo:{bg:"#fdecea",badge:"#c0392b",chip:["✕ 금지","#fdecea","#a3271c","#f3c0ba"],svg:'<g transform="translate(95,70)"><rect x="-50" y="-30" width="100" height="60" rx="8" fill="#fff" stroke="#0a2a5c" stroke-width="2.5"/><rect x="-40" y="-18" width="26" height="30" rx="4" fill="#cfe0ff"/><circle cx="-27" cy="-6" r="6" fill="#9db8e8"/><path d="M-37 10 Q-27 2 -17 10" fill="#9db8e8"/><rect x="-6" y="-16" width="46" height="6" rx="3" fill="#dbe5f5"/><rect x="-6" y="-4" width="46" height="6" rx="3" fill="#dbe5f5"/><rect x="-6" y="8" width="30" height="6" rx="3" fill="#dbe5f5"/></g><g transform="translate(150,70)"><circle cx="0" cy="0" r="40" fill="none" stroke="#c0392b" stroke-width="7" opacity=".9"/><path d="M-28 -28 L28 28" stroke="#c0392b" stroke-width="7" stroke-linecap="round"/></g>'},
+      nolink:{bg:"#fff4e6",badge:"#c0392b",chip:["✕ 금지","#fdecea","#a3271c","#f3c0ba"],svg:'<g transform="translate(92,66)"><rect x="-52" y="-30" width="104" height="50" rx="12" fill="#fff" stroke="#c77800" stroke-width="2.5"/><path d="M-30 20 L-30 34 L-14 20 Z" fill="#fff" stroke="#c77800" stroke-width="2.5"/><g transform="translate(-18,-6)"><ellipse cx="-7" cy="0" rx="9" ry="6" fill="none" stroke="#1a56db" stroke-width="3"/><ellipse cx="7" cy="0" rx="9" ry="6" fill="none" stroke="#1a56db" stroke-width="3"/></g><rect x="14" y="-16" width="26" height="22" rx="3" fill="#eef3fb" stroke="#1a56db" stroke-width="2"/><path d="M30 -16 L40 -16 L40 -6 Z" fill="#fff" stroke="#1a56db" stroke-width="2"/></g><g transform="translate(168,86)"><circle cx="0" cy="0" r="30" fill="none" stroke="#c0392b" stroke-width="6"/><path d="M-21 -21 L21 21" stroke="#c0392b" stroke-width="6" stroke-linecap="round"/></g>'},
+      suspect:{bg:"#fff4e6",badge:"#c77800",chip:["⚠ 의심","#fdf2e0","#8a5a08","#f0d49a"],svg:'<g transform="translate(60,66)"><ellipse cx="0" cy="44" rx="26" ry="19" fill="#1a56db"/><circle cx="0" cy="4" r="22" fill="#f7d9b8"/><path d="M-22 -2 Q0 -28 22 -2 Q16 -13 0 -15 Q-16 -13 -22 -2 Z" fill="#0a2a5c"/><path d="M-12 -3 L-3 -1 M12 -3 L3 -1" stroke="#1f2937" stroke-width="1.9" stroke-linecap="round"/><circle cx="-7" cy="3" r="2.4" fill="#1f2937"/><circle cx="7" cy="3" r="2.4" fill="#1f2937"/><path d="M-6 13 Q0 9 6 13" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/></g><g transform="translate(150,50)"><rect x="-8" y="0" width="86" height="40" rx="11" fill="#fff" stroke="#c77800" stroke-width="2"/><path d="M0 36 L0 50 L16 38 Z" fill="#fff" stroke="#c77800" stroke-width="2"/><text x="35" y="25" font-size="12" font-weight="700" fill="#5f5e5a" text-anchor="middle">전화가 안 돼?</text></g><g transform="translate(196,104)"><path d="M0 -16 L16 14 H-16 Z" fill="#c77800"/><rect x="-2" y="-6" width="4" height="11" rx="2" fill="#fff"/><circle cx="0" cy="9" r="2" fill="#fff"/></g>'},
+      report:{bg:"#eafaf0",badge:"#16a34a",chip:["✓ 즉시","#e7f7ee","#0f7a43","#b7e6cb"],svg:'<g transform="translate(52,74)"><ellipse cx="0" cy="42" rx="25" ry="18" fill="#16a34a"/><circle cx="0" cy="2" r="21" fill="#f7d9b8"/><path d="M-21 -3 Q0 -27 21 -3 Q15 -13 0 -15 Q-15 -13 -21 -3 Z" fill="#0a2a5c"/><path d="M-10 0 Q-7 -4 -4 0 M4 0 Q7 -4 10 0" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M-6 9 Q0 15 6 9" stroke="#1f2937" stroke-width="2.2" fill="none" stroke-linecap="round"/></g><g transform="translate(128,66)"><rect x="-22" y="-34" width="44" height="68" rx="9" fill="#0a2a5c"/><rect x="-17" y="-27" width="34" height="50" rx="3" fill="#eafaf0"/><text x="0" y="3" font-size="20" font-weight="800" fill="#16a34a" text-anchor="middle">112</text></g><g transform="translate(196,70)"><path d="M0 -30 L26 -19 V5 Q26 26 0 37 Q-26 26 -26 5 V-19 Z" fill="#16a34a"/><path d="M-12 2 L-3 12 L14 -9" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>'},
+      general:{bg:"#eef3fb",badge:"#1a56db",chip:["✓ 수칙","#e7f7ee","#0f7a43","#b7e6cb"],svg:'<g transform="translate(120,70)"><path d="M0 -34 L30 -22 V6 Q30 30 0 42 Q-30 30 -30 6 V-22 Z" fill="#1a56db"/><path d="M-13 4 L-4 14 L15 -10" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>'}
+    };
+    return V[k]||V.general;
+  }
+  function renderRulesComic(tips, label){
+    tips = (tips||[]).map(function(x){return String(x).trim();}).filter(Boolean).slice(0,6);
+    if(!tips.length) return "";
+    var NUM=["①","②","③","④","⑤","⑥"];
+    var cards = tips.map(function(t,i){
+      var s=rulesScene(rulesSceneSpec(t));
+      return '<div style="flex:1 1 calc(50% - 7px);min-width:260px;box-sizing:border-box;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;background:#fff;break-inside:avoid">'+
+        '<div style="position:relative">'+
+          '<div style="position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;background:'+s.badge+';color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center">'+(NUM[i]||(i+1))+'</div>'+
+          '<div style="position:absolute;top:10px;right:10px;background:'+s.chip[1]+';color:'+s.chip[2]+';font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;border:1px solid '+s.chip[3]+'">'+s.chip[0]+'</div>'+
+          '<svg viewBox="0 0 240 140" width="100%" height="130" style="display:block;background:'+s.bg+'">'+s.svg+'</svg>'+
+        '</div>'+
+        '<div style="padding:12px 14px;font-size:14px;line-height:1.5;font-weight:600;color:#1f2937">'+esc(t)+'</div>'+
+      '</div>';
+    }).join("");
+    return '<div style="max-width:680px;margin:0 auto"><div style="font-size:15px;font-weight:800;color:#0a2a5c;display:flex;align-items:center;gap:8px;margin:0 0 12px"><span style="width:4px;height:17px;border-radius:2px;background:#1a56db"></span>🛡️ 만화로 보는 보안수칙'+(label?' <span style="font-size:12px;font-weight:600;color:#8a93a3">· '+esc(label)+'</span>':'')+'</div><div style="display:flex;flex-wrap:wrap;gap:14px">'+cards+'</div></div>';
+  }
+
   /* 인쇄(PDF)용 — 뉴스레터 */
   var PRINT_BASE_CSS =
     "*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
@@ -723,7 +761,7 @@ function renderOnepager(nl, label){
 
   window.NewsletterTemplate = {
     esc:esc, escAttr:escAttr, safeUrl:safeUrl, md:mdi, monthLabel:monthLabel,
-    renderNewsletterFull:renderNewsletterFull, buildPrintDocument:buildPrintDocument,
+    renderNewsletterFull:renderNewsletterFull, buildPrintDocument:buildPrintDocument, renderRulesComic:renderRulesComic,
     documentShell:documentShell, renderMaterialBody:renderMaterialBody, buildMaterialPrintDocument:buildMaterialPrintDocument,
   };
 })();
