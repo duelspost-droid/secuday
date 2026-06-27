@@ -227,4 +227,5 @@ git clone https://github.com/duelspost-droid/jbax-www.git
 ## 2026-06-27 — 7월호 인포그래픽 전환 + 만화로 보는 보안수칙
 
 - **7월호(2026-07) 인포그래픽 전환**: `newsletter.format`을 comic→`infographic`으로, `infographic` 데이터(도넛 38%·HTML 25%/PDF 14.2%·다크웹·공격 3단계 게이지·피해액) 주입(v7, SQL `add_version`). 라이브 확인. 이전 만화(v6)는 이력 보존.
-- **만화로 보는 보안수칙**(공개 섹션): `newsletter-template.js`에 `renderRulesComic(tips, label)` 추가 + export. 수칙 텍스트를 키워드로 장면 매핑(report/noinfo/nolink/suspect/verify/general)해 만화풍 카드(코드 SVG)로 렌더. 공개 상세에서 뉴스레터 아래 `#rules-section`에 표시(`index.html`+`public.js`+`style.css`, 웹 전용·PDF 미포함). 수칙 없으면 미표시.
+- **만화로 보는 보안수칙**(공개 섹션): `newsletter-template.js`에 `renderRulesComic(tips, label)` 추가 + export. 수칙 텍스트를 키워드로 장면 매핑(report/noinfo/nolink/suspect/verify/general)해 만화풍 카드(코드 SVG)로 렌더. 공개 상세에서 뉴스레터 아래 `#rules-section`에 표시(`index.html`+`public.js`+`style.css`, 웹 전용·PDF 미포함). 수칙 없으면 미표시. 라이브 확인 완료.
+- **관리자 메일링 UI**(PR #17): `admin.html`에 ✉️ 메일링 버튼 + `#view-mailing`(수신자 추가/목록/활성 토글/삭제 + 발송 월 + 이번 호 발송). `admin.js`에 `showMailing/loadRecipients/addRecipient/toggleRecipient/deleteRecipient/sendMailing`. recipients 테이블(0004) CRUD는 authenticated RLS로 보호, 발송은 `send-mailing` 호출. ⚠️ 실제 발송엔 Supabase 시크릿 **RESEND_API_KEY** 필요(미설정 시 발송 버튼이 안내 오류 표시).
