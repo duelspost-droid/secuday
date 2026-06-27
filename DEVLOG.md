@@ -223,3 +223,8 @@ git clone https://github.com/duelspost-droid/jbax-www.git
 - **관리자**: 포맷 셀렉터(툴바·수동편집)에 📊 인포그래픽 추가(카드 라벨 정리).
 - **월간 배치 자동화**(GitHub Actions): `.github/workflows/monthly-newsletter.yml` — 매월 25일(09:00 KST) 다음 달 호를 `format=infographic, save=true`로 생성·저장(검토 후 1일 발송). `workflow_dispatch`로 수동 실행/월·포맷 지정 가능. 키는 공개 publishable key 사용(repo Secret `SUPABASE_ANON_KEY`로 덮어쓰기 가능).
   - ⚠️ **전제**: 실제 생성은 Supabase `ANTHROPIC_API_KEY` 크레딧 필요(현재 부족 → 자동화는 세팅 완료, 충전 시 동작). 동작 확인은 Actions 탭의 수동 실행으로.
+
+## 2026-06-27 — 7월호 인포그래픽 전환 + 만화로 보는 보안수칙
+
+- **7월호(2026-07) 인포그래픽 전환**: `newsletter.format`을 comic→`infographic`으로, `infographic` 데이터(도넛 38%·HTML 25%/PDF 14.2%·다크웹·공격 3단계 게이지·피해액) 주입(v7, SQL `add_version`). 라이브 확인. 이전 만화(v6)는 이력 보존.
+- **만화로 보는 보안수칙**(공개 섹션): `newsletter-template.js`에 `renderRulesComic(tips, label)` 추가 + export. 수칙 텍스트를 키워드로 장면 매핑(report/noinfo/nolink/suspect/verify/general)해 만화풍 카드(코드 SVG)로 렌더. 공개 상세에서 뉴스레터 아래 `#rules-section`에 표시(`index.html`+`public.js`+`style.css`, 웹 전용·PDF 미포함). 수칙 없으면 미표시.
