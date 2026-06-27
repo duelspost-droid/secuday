@@ -214,3 +214,12 @@ git clone https://github.com/duelspost-droid/jbax-www.git
 - **오디오 플레이어(휴면)**: 공개 상세 상단에 `newsletter.audio_url`이 있을 때만 뜨는 웹 전용 `<audio>` 플레이어 추가(`index.html #audio-section` + `public.js renderDetail` + `style.css .audio-*`, PR #13). PDF/인쇄엔 미포함.
   - ⚠️ **이번 배포에서 오디오 파일은 제외**: 28MB 호스팅이 자동화 불가(브라우저 업로드 툴 10MB 한도, ffmpeg 부재, 공개 버킷 생성은 안전장치 차단). `audio_url` 미설정 → 플레이어 휴면.
   - **추후 활성화법**: 공개 `posters` 버킷에 `audio-2026-07.m4a` 업로드 → 해당 월 버전의 `newsletter.audio_url`을 `https://nrdapzgtibbusvoaceuh.supabase.co/storage/v1/object/public/posters/audio-2026-07.m4a`로 채우면 플레이어 표시.
+
+## 2026-06-24 — 인포그래픽 포맷(5번째) + 월간 배치 자동화
+
+- **인포그래픽 포맷**(`newsletter.format = "infographic"`): NotebookLM 인포그래픽 스타일을 코드 SVG로 재현. `newsletter-template.js`에 `renderInfographic` + 디스패처 케이스. 구성: 헤더 → 위협분석(도넛 % + 악성첨부 형식 + 보조노트) → 공격단계 반원 게이지(danger→warn→ok, value/max로 호 계산) → 현장대응(피해액 콜아웃 + 수칙). 데이터 없으면 stats/tips로 우아하게 폴백. 전부 인라인 style/SVG(미리보기=PDF). 포맷 5종이 됨(만화/카드/표준/원페이저/인포그래픽).
+- **데이터 모델**: `newsletter.infographic = { donut{value,label,caption}, file_types[{label,pct}], note{title,body}, stages[{stage,name,value,max,tone,sub}], damage{label,value,note} }`.
+- **generate-newsletter**: format에 `infographic` 추가 + `infographic` 스키마/프롬프트(요청 시 필수) + **배치 저장(save) 모드** — `body.save=true`면 서비스롤로 해당 월에 `add_version`(없으면 `create_material`)으로 직접 저장. ⚠️ **대시보드 재배포 필요**.
+- **관리자**: 포맷 셀렉터(툴바·수동편집)에 📊 인포그래픽 추가(카드 라벨 정리).
+- **월간 배치 자동화**(GitHub Actions): `.github/workflows/monthly-newsletter.yml` — 매월 25일(09:00 KST) 다음 달 호를 `format=infographic, save=true`로 생성·저장(검토 후 1일 발송). `workflow_dispatch`로 수동 실행/월·포맷 지정 가능. 키는 공개 publishable key 사용(repo Secret `SUPABASE_ANON_KEY`로 덮어쓰기 가능).
+  - ⚠️ **전제**: 실제 생성은 Supabase `ANTHROPIC_API_KEY` 크레딧 필요(현재 부족 → 자동화는 세팅 완료, 충전 시 동작). 동작 확인은 Actions 탭의 수동 실행으로.
