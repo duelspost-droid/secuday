@@ -570,6 +570,20 @@ function downloadNewsletterPdf() {
   setTimeout(() => { try { w.print(); } catch (e) { /* 사용자가 직접 인쇄 가능 */ } }, 400);
 }
 
+/* 세로형(메일 첨부용) — 통계+4컷+수칙을 한 장 포트레이트(A4 세로)로 열고 인쇄(PDF로 저장 → 메일 첨부) */
+function downloadEmailVerticalPdf() {
+  if (!current) return;
+  const nl = nlDraft || currentNewsletter();
+  if (!nl) { toast("먼저 뉴스레터를 생성/저장하세요.", true); return; }
+  const w = window.open("", "_blank");
+  if (!w) { toast("팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 시도하세요.", true); return; }
+  w.document.write(NewsletterTemplate.buildEmailVerticalDocument(nl, current.month));
+  w.document.close();
+  w.focus();
+  // 렌더 완료 후 인쇄 다이얼로그(대상: 'PDF로 저장' → 세로 A4 한 장, 메일에 첨부)
+  setTimeout(() => { try { w.print(); } catch (e) { /* 사용자가 직접 인쇄 가능 */ } }, 400);
+}
+
 /* 자료 보기 — 현재 자료(제목·테마·포스터·안내·수칙)를 표준 A4 문서로 PDF 다운로드(인쇄) */
 function downloadMaterialPdf() {
   if (!current) return;
