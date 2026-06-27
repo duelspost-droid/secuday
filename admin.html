@@ -25,6 +25,7 @@
       <span class="subtitle">자료 등록·편집·버전관리·AI 질의</span>
       <button class="btn primary" onclick="showCreate()">+ 새 자료 등록</button>
       <button class="btn" id="gen-btn" onclick="generateMaterial()">✨ AI 자동 생성</button>
+      <button class="btn" onclick="showMailing()">✉️ 메일링</button>
       <a class="btn small" href="index.html" target="_blank">메인 보기 ↗</a>
       <span id="user-email" class="user-email"></span>
       <button class="btn small" onclick="changePassword()">비밀번호 변경</button>
@@ -156,6 +157,32 @@
             <input id="ai-message" type="text" placeholder="예: 재택근무 보안 수칙을 추가해줘 / 문구를 더 친근하게 바꿔줘" autocomplete="off">
             <button type="submit" class="btn primary" id="ai-send">전송</button>
           </form>
+        </div>
+      </section>
+
+      <!-- 메일링: 수신자 관리 + 발송 -->
+      <section id="view-mailing" class="view" hidden>
+        <div class="detail-head">
+          <button class="btn small" onclick="showList()">← 목록</button>
+          <h2>메일링 — 수신자 / 발송</h2>
+        </div>
+        <p class="hint">최신(또는 지정 월) 자료를 임직원에게 이메일로 발송합니다. 뉴스레터가 있으면 뉴스레터 포맷으로, 없으면 안내문 포맷으로 보냅니다.<br>※ 실제 발송에는 Supabase 시크릿 <b>RESEND_API_KEY</b>가 필요합니다(미설정 시 발송 버튼이 안내 오류를 표시).</p>
+
+        <div class="mailing-add">
+          <input id="rcpt-email" type="email" placeholder="이메일 (예: hong@jbfg.com)">
+          <input id="rcpt-name" type="text" placeholder="이름(선택)">
+          <button class="btn" onclick="addRecipient()">+ 수신자 추가</button>
+        </div>
+
+        <table class="vtable">
+          <thead><tr><th>이메일</th><th>이름</th><th>활성</th><th></th></tr></thead>
+          <tbody id="rcpt-rows"></tbody>
+        </table>
+
+        <div class="mailing-send">
+          <label>발송 월 <input id="send-month" type="month"></label>
+          <button class="btn primary" id="send-btn" onclick="sendMailing()">📧 이번 호 발송</button>
+          <span id="send-status" class="nl-status"></span>
         </div>
       </section>
     </main>

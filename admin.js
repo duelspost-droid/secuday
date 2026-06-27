@@ -809,6 +809,72 @@ async function saveNewsletter() {
   }
 }
 
+/* ---------- 메일링 (수신자 관리 + 발송) ---------- */
+function showMailing() {
+  show("#view-mailing");
+  const d = new Date();
+  $("#send-month").value = d.toISOString().slice(0, 7);
+  $("#send-status").textContent = "";
+  loadRecipients();
+}
+
+async function loadRecipients() {
+  const { data, error } = await sb.from("recipients").select("*").order("created_at", { ascending: true });
+  if (error) { toast(error.message, true); return; }
+  const rows = (data || []).map((r) => `
+    <tr>
+      <td>${esc(r.email)}</td>
+      <td>${esc(r.name || "")}</td>
+      <td><input type="checkbox" ${r.active ? "checked" : ""} onchange="toggleRecipient(${r.id}, this.checked)"></td>
+      <td><button class="btn small danger" onclick="deleteRecipient(${r.id})">삭제</button></td>
+    </tr>`).join("");
+  $("#rcpt-rows").innerHTML = rows || `<tr><td colspan="4" class="empty">등록된 수신자가 없습니다.</td></tr>`;
+}
+
+async function addRecipient() {
+  const email = $("#rcpt-email").value.trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast("올바른 이메일을 입력하세요.", true); return; }
+  const name = $("#rcpt-name").value.trim();
+  const { error } = await sb.from("recipients").insert({ email, name });
+  if (error) { toast(error.message, true); return; }
+  $("#rcpt-email").value = ""; $("#rcpt-name").value = "";
+  toast("수신자가 추가되었습니다.");
+  loadRecipients();
+}
+
+async function toggleRecipient(id, active) {
+  const { error } = await sb.from("recipients").update({ active }).eq("id", id);
+  if (error) toast(error.message, true);
+}
+
+async function deleteRecipient(id) {
+  if (!confirm("이 수신자를 삭제할까요?")) return;
+  const { error } = await sb.from("recipients").delete().eq("id", id);
+  if (error) { toast(error.message, true); return; }
+  toast("삭제되었습니다.");
+  loadRecipients();
+}
+
+async function sendMailing() {
+  const month = $("#send-month").value;
+  const btn = $("#send-btn"), st = $("#send-status");
+  if (!confirm(`${month || "최신"} 자료를 활성 수신자에게 발송할까요?`)) return;
+  const prev = btn.textContent;
+  btn.disabled = true; btn.textContent = "발송 중…"; st.textContent = "발송 중…";
+  try {
+    const { data, error } = await sb.functions.invoke("send-mailing", { body: month ? { month } : {} });
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    st.textContent = `발송 완료: ${data.sent}/${data.total}건${data.subject ? ` · ${data.subject}` : ""}`;
+    toast(`발송 완료 ${data.sent}/${data.total}건`);
+  } catch (e) {
+    st.textContent = "발송 실패: " + (e.message || e);
+    toast(e.message || "발송 실패", true);
+  } finally {
+    btn.disabled = false; btn.textContent = prev;
+  }
+}
+
 /* ---------- 시작 ---------- */
 if (!cfg || cfg.SUPABASE_URL.includes("YOUR-PROJECT")) {
   document.body.innerHTML =

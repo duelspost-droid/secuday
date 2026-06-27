@@ -266,6 +266,14 @@ main { max-width: 1080px; margin: 0 auto; padding: 24px; }
 .rules-section { max-width: 680px; margin: 18px auto 0; }
 .rules-section:empty { display: none; }
 
+/* 메일링 (수신자 관리 + 발송) */
+.mailing-add { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.mailing-add input { flex: 1 1 200px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+.mailing-send { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+.mailing-send label { font-size: 14px; font-weight: 600; }
+.mailing-send input[type="month"] { padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; margin-left: 6px; }
+#rcpt-rows .empty { text-align: center; color: var(--muted); padding: 16px; }
+
 /* 토스트 */
 .toast {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
