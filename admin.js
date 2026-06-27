@@ -327,26 +327,53 @@ function switchTab(name) {
 
 /* ---------- 버전 이력 ---------- */
 const SOURCE_LABEL = { manual: "수동", ai: "AI", rollback: "롤백" };
+const FORMAT_LABEL = { comic: "💬 만화형", card: "🃏 카드형", infographic: "📊 인포그래픽", standard: "🛡️ 표준형", onepager: "📄 원페이저" };
+let versionCache = {};   // version_no -> 버전 행(미리보기 렌더용)
+
+/* 버전 1개의 미리보기 HTML — 뉴스레터가 있으면 그 포맷 그대로, 없으면 자료 본문으로 */
+function versionPreviewHTML(v, label) {
+  if (v && v.newsletter) return NewsletterTemplate.renderNewsletterFull(v.newsletter, label);
+  if (NewsletterTemplate.renderMaterialBody) return NewsletterTemplate.renderMaterialBody(v, null);
+  return `<div style="padding:18px"><b>${esc(v.title || "")}</b><div>${md(v.content || "")}</div></div>`;
+}
 
 async function loadVersions() {
   const { data: versions, error } = await sb
     .from("versions")
-    .select("version_no, title, change_note, change_source, created_at")
+    .select("version_no, title, theme, content, rules, change_note, change_source, created_at, newsletter")
     .eq("material_id", current.id)
     .order("version_no", { ascending: false });
   if (error) { toast(error.message, true); return; }
 
+  versionCache = {};
+  versions.forEach((v) => { versionCache[v.version_no] = v; });
   const cur = current.current.version_no;
-  $("#version-rows").innerHTML = versions.map((v) => `
-    <tr class="${v.version_no === cur ? "current-row" : ""}">
-      <td><strong>v${v.version_no}</strong>${v.version_no === cur ? " ●" : ""}</td>
-      <td>${esc(v.title)}</td>
-      <td>${esc(v.change_note)}</td>
-      <td><span class="badge src-${v.change_source}">${SOURCE_LABEL[v.change_source] || v.change_source}</span></td>
-      <td>${fmtDate(v.created_at)}</td>
-      <td>${v.version_no !== cur
-        ? `<button class="btn small" onclick="rollback(${v.version_no})">이 버전으로 복원</button>` : ""}</td>
-    </tr>`).join("");
+  const label = NewsletterTemplate.monthLabel(current && current.month);
+
+  $("#version-gallery").innerHTML = versions.map((v) => {
+    const isCur = v.version_no === cur;
+    const fmt = v.newsletter && v.newsletter.format;
+    return `
+    <div class="ver-card${isCur ? " current" : ""}">
+      <div class="ver-card-head">
+        <span class="ver-no">v${v.version_no}${isCur ? " <span class='ver-cur'>● 현재</span>" : ""}</span>
+        <span class="badge src-${v.change_source}">${SOURCE_LABEL[v.change_source] || v.change_source}</span>
+        ${fmt ? `<span class="ver-fmt">${FORMAT_LABEL[fmt] || fmt}</span>` : ""}
+        <span class="ver-date">${fmtDate(v.created_at)}</span>
+      </div>
+      <div class="ver-note">${esc(v.change_note || "")}</div>
+      <div class="ver-preview" onclick="openVersionPreview(${v.version_no})">
+        <div class="ver-preview-inner">${versionPreviewHTML(v, label)}</div>
+        <div class="ver-preview-hover">🔍 크게 보기</div>
+      </div>
+      <div class="ver-card-actions">
+        ${isCur
+          ? `<span class="ver-applied">✓ 현재 적용됨</span>`
+          : `<button class="btn small primary" onclick="rollback(${v.version_no})">이 버전 선택</button>`}
+        <button class="btn small" onclick="openVersionPreview(${v.version_no})">미리보기</button>
+      </div>
+    </div>`;
+  }).join("");
 
   const opts = versions.map((v) => `<option value="${v.version_no}">v${v.version_no}</option>`).join("");
   $("#diff-from").innerHTML = opts;
@@ -354,6 +381,21 @@ async function loadVersions() {
   if (versions.length >= 2) $("#diff-from").value = versions[1].version_no;
   $("#diff-output").hidden = true;
 }
+
+/* 버전 미리보기 모달 — 크게 보고 바로 선택(복원) */
+function openVersionPreview(vno) {
+  const v = versionCache[vno];
+  if (!v) return;
+  const label = NewsletterTemplate.monthLabel(current && current.month);
+  const isCur = v.version_no === current.current.version_no;
+  $("#ver-modal-title").textContent = `v${vno} 미리보기` + (v.newsletter && v.newsletter.format ? ` · ${FORMAT_LABEL[v.newsletter.format] || v.newsletter.format}` : "");
+  $("#ver-modal-body").innerHTML = versionPreviewHTML(v, label);
+  const selBtn = $("#ver-modal-select");
+  selBtn.hidden = isCur;
+  if (!isCur) { selBtn.textContent = "이 버전 선택"; selBtn.onclick = () => { closeVersionPreview(); rollback(vno); }; }
+  $("#ver-modal").hidden = false;
+}
+function closeVersionPreview() { $("#ver-modal").hidden = true; $("#ver-modal-body").innerHTML = ""; }
 
 async function rollback(vno) {
   if (!confirm(`v${vno} 내용으로 복원할까요? (새 버전으로 기록됩니다)`)) return;

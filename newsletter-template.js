@@ -146,134 +146,162 @@
 
 
   /* ===== 만화/카드/원페이저 렌더러 (워크플로 합성: flat-corporate 기준) ===== */
+/* ===== 만화 4컷 아트 (가로 만화형 / 세로 메일첨부형 공용) =====
+   캐릭터(victim/attacker) + 장면별 소품을 그리는 단일 소스. renderComic·buildEmailVertical이 함께 사용. */
+var CMC_NAVY="#0a2a5c", CMC_BLUE="#1a56db", CMC_DANGER="#c0392b", CMC_SAFE="#16a34a", CMC_WARN="#c77800";
+function comicFace(mood){
+  var eyes, mouth, brow="";
+  if(mood==="worried"){
+    eyes='<circle cx="-7" cy="0" r="2.6" fill="#1f2937"/><circle cx="7" cy="0" r="2.6" fill="#1f2937"/>';
+    brow='<path d="M -12 -7 L -3 -5 M 12 -7 L 3 -5" stroke="#1f2937" stroke-width="1.9" stroke-linecap="round" fill="none"/>';
+    mouth='<path d="M -6 11 Q 0 7 6 11" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>';
+  } else if(mood==="shocked"){
+    eyes='<circle cx="-7" cy="0" r="3.4" fill="#fff" stroke="#1f2937" stroke-width="1.6"/><circle cx="-7" cy="0" r="1.5" fill="#1f2937"/><circle cx="7" cy="0" r="3.4" fill="#fff" stroke="#1f2937" stroke-width="1.6"/><circle cx="7" cy="0" r="1.5" fill="#1f2937"/>';
+    brow='<path d="M -12 -9 L -3 -10 M 12 -9 L 3 -10" stroke="#1f2937" stroke-width="1.6" stroke-linecap="round" fill="none"/>';
+    mouth='<ellipse cx="0" cy="11" rx="4" ry="5" fill="#7f1d1d"/>';
+  } else if(mood==="relieved"){
+    eyes='<path d="M -10 0 Q -7 -4 -4 0" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M 4 0 Q 7 -4 10 0" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    mouth='<path d="M -7 9 Q 0 16 7 9" stroke="#1f2937" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+  } else if(mood==="sinister"){
+    eyes='<path d="M -11 -2 L -3 1 M 11 -2 L 3 1" stroke="#1f2937" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="-7" cy="1" r="2" fill="#1f2937"/><circle cx="7" cy="1" r="2" fill="#1f2937"/>';
+    mouth='<path d="M -7 11 Q 0 8 7 12" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>';
+  } else {
+    eyes='<circle cx="-7" cy="0" r="2.6" fill="#1f2937"/><circle cx="7" cy="0" r="2.6" fill="#1f2937"/>';
+    mouth='<path d="M -6 10 L 6 10" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>';
+  }
+  return brow+eyes+mouth;
+}
+function comicVictim(x,y,bodyColor,mood,scale){
+  scale=scale||1;
+  return '<g transform="translate('+x+','+y+') scale('+scale+')">'+
+    '<rect x="-26" y="34" width="52" height="40" rx="14" fill="'+bodyColor+'"/>'+
+    '<circle cx="0" cy="8" r="24" fill="#f7d9b8"/>'+
+    '<path d="M -24 2 Q 0 -28 24 2 Q 18 -10 0 -12 Q -18 -10 -24 2 Z" fill="'+CMC_NAVY+'"/>'+
+    '<g transform="translate(0,8)">'+comicFace(mood)+'</g>'+
+  '</g>';
+}
+function comicAttacker(x,y,mood,scale){
+  scale=scale||1;
+  return '<g transform="translate('+x+','+y+') scale('+scale+')">'+
+    '<path d="M -30 74 Q -30 30 0 26 Q 30 30 30 74 Z" fill="#111827"/>'+
+    '<circle cx="0" cy="8" r="23" fill="#d9b48f"/>'+
+    '<path d="M -28 8 Q -30 -24 0 -26 Q 30 -24 28 8 Q 22 -6 0 -8 Q -22 -6 -28 8 Z" fill="#1f2937"/>'+
+    '<path d="M -28 8 Q -30 -26 0 -28 Q 30 -26 28 8 L 30 26 Q 14 14 0 14 Q -14 14 -30 26 Z" fill="#111827" opacity="0.9"/>'+
+    '<g transform="translate(0,9)">'+comicFace(mood||"sinister")+'</g>'+
+  '</g>';
+}
+function comicSceneSVG(scene, mood){
+  var NAVY=CMC_NAVY, BLUE=CMC_BLUE, DANGER=CMC_DANGER, SAFE=CMC_SAFE, WARN=CMC_WARN;
+  var safe = (scene==="shield-verify" || scene==="double-check" || mood==="relieved");
+  var bg = safe ? "#eafaf0" : (mood==="shocked" ? "#fdecea" : (mood==="worried" ? "#fff4e6" : "#eef3fb"));
+  var head='<svg viewBox="0 0 200 150" width="100%" height="150" xmlns="http://www.w3.org/2000/svg" style="display:block;">'+
+           '<rect x="0" y="0" width="200" height="150" rx="10" fill="'+bg+'"/>';
+  var foot='</svg>';
+  var art="";
+  if(scene==="phone-call"){
+    art = comicAttacker(52,56,"sinister",0.9)+
+      '<g transform="translate(150,55)">'+
+        '<rect x="-16" y="-26" width="32" height="56" rx="7" fill="'+NAVY+'"/>'+
+        '<rect x="-12" y="-20" width="24" height="40" rx="3" fill="#cfe0ff"/>'+
+        '<circle cx="0" cy="25" r="2.5" fill="#cfe0ff"/>'+
+        '<g stroke="'+DANGER+'" stroke-width="2.4" fill="none" stroke-linecap="round">'+
+          '<path d="M 22 -22 Q 30 -18 30 -10"/><path d="M 26 -30 Q 40 -24 40 -10"/>'+
+        '</g>'+
+      '</g>';
+  } else if(scene==="phone-pressure"){
+    art = comicVictim(70,52,BLUE,mood,1)+
+      '<g transform="translate(150,55)">'+
+        '<rect x="-16" y="-26" width="32" height="56" rx="7" fill="'+DANGER+'"/>'+
+        '<rect x="-12" y="-20" width="24" height="40" rx="3" fill="#ffe1dc"/>'+
+        '<text x="0" y="6" font-family="sans-serif" font-size="20" font-weight="700" fill="'+DANGER+'" text-anchor="middle">!</text>'+
+      '</g>'+
+      '<g stroke="'+WARN+'" stroke-width="2.4" fill="none" stroke-linecap="round" transform="translate(112,40)">'+
+        '<path d="M 0 0 L 12 -6"/><path d="M 0 8 L 12 8"/><path d="M 0 16 L 12 22"/>'+
+      '</g>';
+  } else if(scene==="money-loss"){
+    art = comicVictim(64,55,BLUE,mood,1)+
+      '<g transform="translate(150,70)">'+
+        '<rect x="-22" y="-14" width="44" height="28" rx="5" fill="#f7d4cf" stroke="'+DANGER+'" stroke-width="2"/>'+
+        '<circle cx="0" cy="0" r="9" fill="#fff" stroke="'+DANGER+'" stroke-width="2"/>'+
+        '<text x="0" y="5" font-family="sans-serif" font-size="12" font-weight="700" fill="'+DANGER+'" text-anchor="middle">&#8361;</text>'+
+      '</g>'+
+      '<g stroke="'+DANGER+'" stroke-width="2.6" fill="none" stroke-linecap="round" transform="translate(104,46)">'+
+        '<path d="M 0 0 L 22 -6"/><path d="M 2 10 L 24 6"/><path d="M 0 20 L 22 18"/>'+
+      '</g>'+
+      '<text x="150" y="120" font-family="sans-serif" font-size="11" font-weight="700" fill="'+DANGER+'" text-anchor="middle">&#8722;&#51060;&#52404;&#50756;&#47308;</text>';
+  } else if(scene==="email-phishing" || scene==="link-trap"){
+    art = comicVictim(58,55,BLUE,mood,1)+
+      '<g transform="translate(140,60)">'+
+        '<rect x="-26" y="-18" width="52" height="36" rx="5" fill="#fff" stroke="'+NAVY+'" stroke-width="2"/>'+
+        '<path d="M -26 -16 L 0 4 L 26 -16" fill="none" stroke="'+NAVY+'" stroke-width="2"/>'+
+        '<circle cx="20" cy="14" r="11" fill="'+DANGER+'"/>'+
+        '<path d="M 16 14 L 24 14 M 22 14 L 19 11 M 22 14 L 19 17" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '</g>';
+  } else if(scene==="data-leak"){
+    art = '<g transform="translate(100,70)">'+
+        '<rect x="-30" y="-22" width="60" height="44" rx="6" fill="'+NAVY+'"/>'+
+        '<rect x="-22" y="-14" width="44" height="6" rx="3" fill="#cfe0ff"/>'+
+        '<rect x="-22" y="-2" width="32" height="6" rx="3" fill="#cfe0ff"/>'+
+        '<g transform="translate(34,18)"><path d="M 0 0 Q 14 4 14 18" stroke="'+DANGER+'" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="14" cy="18" r="4" fill="'+DANGER+'"/></g>'+
+      '</g>';
+  } else if(scene==="ransomware-lock"){
+    art = '<g transform="translate(100,68)">'+
+        '<rect x="-24" y="-6" width="48" height="40" rx="6" fill="'+DANGER+'"/>'+
+        '<path d="M -14 -6 V -16 a14 14 0 0 1 28 0 V -6" fill="none" stroke="'+NAVY+'" stroke-width="5"/>'+
+        '<circle cx="0" cy="12" r="5" fill="#fff"/><rect x="-2.5" y="12" width="5" height="11" fill="#fff"/>'+
+      '</g>';
+  } else if(scene==="hacker"){
+    art = comicAttacker(100,52,"sinister",1.05)+
+      '<g stroke="#111827" stroke-width="2" fill="none" stroke-linecap="round" transform="translate(150,46)">'+
+        '<path d="M 0 0 L 14 -5"/><path d="M 0 9 L 14 9"/><path d="M 0 18 L 14 23"/>'+
+      '</g>';
+  } else if(scene==="double-check"){
+    art = comicVictim(64,55,BLUE,mood,1)+
+      '<g transform="translate(150,60)">'+
+        '<circle cx="0" cy="0" r="22" fill="#fff" stroke="'+SAFE+'" stroke-width="3"/>'+
+        '<path d="M -10 1 L -3 9 L 12 -8" stroke="'+SAFE+'" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '</g>';
+  } else {
+    art = comicVictim(58,55,SAFE,mood,1)+
+      '<g transform="translate(146,62)">'+
+        '<path d="M 0 -28 L 26 -18 V 6 Q 26 26 0 36 Q -26 26 -26 6 V -18 Z" fill="'+SAFE+'"/>'+
+        '<path d="M -11 2 L -3 12 L 13 -8" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '</g>';
+  }
+  return head+art+foot;
+}
+/* 한 컷 카드(번호 배지 + 장면 + 화자 + 말풍선 + 캡션) — 가로/세로 공용 */
+function comicPanelCard(p, k){
+  p = p||{};
+  var INK="#1f2937", MUT="#6b7280", LINE="#e5e7eb";
+  var circled=["①","②","③","④","⑤","⑥"];
+  var v=function(x){ return (x===null||x===undefined)?"":String(x); };
+  var sc=v(p.scene)||"shield-verify", md=v(p.mood)||"neutral";
+  var isSafe=(sc==="shield-verify"||sc==="double-check"||md==="relieved"||k===3);
+  var accent=isSafe?CMC_SAFE:(k===2?CMC_DANGER:(k===1?CMC_WARN:CMC_BLUE));
+  var bubbleBg=isSafe?"#eafaf0":"#f3f6fc";
+  var bubbleBorder=isSafe?"#bfe8cd":"#dbe5f5";
+  return '<div style="flex:1 1 calc(50% - 7px);min-width:240px;box-sizing:border-box;border:1px solid '+LINE+';border-radius:14px;overflow:hidden;background:#fff;break-inside:avoid;position:relative;">'+
+    '<div style="position:absolute;top:8px;left:8px;z-index:2;width:30px;height:30px;border-radius:50%;background:'+accent+';color:#fff;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25);">'+(circled[k]||(k+1))+'</div>'+
+    comicSceneSVG(sc,md)+
+    '<div style="padding:12px 12px 4px 12px;">'+
+      (v(p.speaker)?'<div style="font-size:11px;font-weight:800;color:'+accent+';margin-bottom:5px;">'+esc(v(p.speaker))+'</div>':'')+
+      '<div style="position:relative;background:'+bubbleBg+';border:1px solid '+bubbleBorder+';border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:'+INK+';">'+
+        '<span style="position:absolute;top:-7px;left:16px;width:12px;height:12px;background:'+bubbleBg+';border-left:1px solid '+bubbleBorder+';border-top:1px solid '+bubbleBorder+';transform:rotate(45deg);"></span>'+
+        esc(v(p.speech))+
+      '</div>'+
+    '</div>'+
+    (v(p.caption)?'<div style="padding:8px 12px 12px 12px;font-size:12px;color:'+MUT+';border-top:1px dashed '+LINE+';margin-top:8px;">'+esc(v(p.caption))+'</div>':'<div style="height:6px;"></div>')+
+  '</div>';
+}
+
 function renderComic(nl, label){
   nl = nl || {};
   var NAVY="#0a2a5c", BLUE="#1a56db", DANGER="#c0392b", SAFE="#16a34a", WARN="#c77800";
   var INK="#1f2937", MUT="#6b7280", LINE="#e5e7eb", PAPER="#ffffff";
   function val(v){ return (v===null||v===undefined)?"":String(v); }
 
-  function face(mood){
-    var eyes, mouth, brow="";
-    if(mood==="worried"){
-      eyes='<circle cx="-7" cy="0" r="2.6" fill="#1f2937"/><circle cx="7" cy="0" r="2.6" fill="#1f2937"/>';
-      brow='<path d="M -12 -7 L -3 -5 M 12 -7 L 3 -5" stroke="#1f2937" stroke-width="1.9" stroke-linecap="round" fill="none"/>';
-      mouth='<path d="M -6 11 Q 0 7 6 11" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>';
-    } else if(mood==="shocked"){
-      eyes='<circle cx="-7" cy="0" r="3.4" fill="#fff" stroke="#1f2937" stroke-width="1.6"/><circle cx="-7" cy="0" r="1.5" fill="#1f2937"/><circle cx="7" cy="0" r="3.4" fill="#fff" stroke="#1f2937" stroke-width="1.6"/><circle cx="7" cy="0" r="1.5" fill="#1f2937"/>';
-      brow='<path d="M -12 -9 L -3 -10 M 12 -9 L 3 -10" stroke="#1f2937" stroke-width="1.6" stroke-linecap="round" fill="none"/>';
-      mouth='<ellipse cx="0" cy="11" rx="4" ry="5" fill="#7f1d1d"/>';
-    } else if(mood==="relieved"){
-      eyes='<path d="M -10 0 Q -7 -4 -4 0" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M 4 0 Q 7 -4 10 0" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>';
-      mouth='<path d="M -7 9 Q 0 16 7 9" stroke="#1f2937" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
-    } else if(mood==="sinister"){
-      eyes='<path d="M -11 -2 L -3 1 M 11 -2 L 3 1" stroke="#1f2937" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="-7" cy="1" r="2" fill="#1f2937"/><circle cx="7" cy="1" r="2" fill="#1f2937"/>';
-      mouth='<path d="M -7 11 Q 0 8 7 12" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>';
-    } else {
-      eyes='<circle cx="-7" cy="0" r="2.6" fill="#1f2937"/><circle cx="7" cy="0" r="2.6" fill="#1f2937"/>';
-      mouth='<path d="M -6 10 L 6 10" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>';
-    }
-    return brow+eyes+mouth;
-  }
-
-  function victim(x,y,bodyColor,mood,scale){
-    scale=scale||1;
-    return '<g transform="translate('+x+','+y+') scale('+scale+')">'+
-      '<rect x="-26" y="34" width="52" height="40" rx="14" fill="'+bodyColor+'"/>'+
-      '<circle cx="0" cy="8" r="24" fill="#f7d9b8"/>'+
-      '<path d="M -24 2 Q 0 -28 24 2 Q 18 -10 0 -12 Q -18 -10 -24 2 Z" fill="'+NAVY+'"/>'+
-      '<g transform="translate(0,8)">'+face(mood)+'</g>'+
-    '</g>';
-  }
-  function attacker(x,y,mood,scale){
-    scale=scale||1;
-    return '<g transform="translate('+x+','+y+') scale('+scale+')">'+
-      '<path d="M -30 74 Q -30 30 0 26 Q 30 30 30 74 Z" fill="#111827"/>'+
-      '<circle cx="0" cy="8" r="23" fill="#d9b48f"/>'+
-      '<path d="M -28 8 Q -30 -24 0 -26 Q 30 -24 28 8 Q 22 -6 0 -8 Q -22 -6 -28 8 Z" fill="#1f2937"/>'+
-      '<path d="M -28 8 Q -30 -26 0 -28 Q 30 -26 28 8 L 30 26 Q 14 14 0 14 Q -14 14 -30 26 Z" fill="#111827" opacity="0.9"/>'+
-      '<g transform="translate(0,9)">'+face(mood||"sinister")+'</g>'+
-    '</g>';
-  }
-
-  function sceneSVG(scene, mood){
-    var safe = (scene==="shield-verify" || scene==="double-check" || mood==="relieved");
-    var bg = safe ? "#eafaf0" : (mood==="shocked" ? "#fdecea" : (mood==="worried" ? "#fff4e6" : "#eef3fb"));
-    var head='<svg viewBox="0 0 200 150" width="100%" height="150" xmlns="http://www.w3.org/2000/svg" style="display:block;">'+
-             '<rect x="0" y="0" width="200" height="150" rx="10" fill="'+bg+'"/>';
-    var foot='</svg>';
-    var art="";
-    if(scene==="phone-call"){
-      art = attacker(52,56,"sinister",0.9)+
-        '<g transform="translate(150,55)">'+
-          '<rect x="-16" y="-26" width="32" height="56" rx="7" fill="'+NAVY+'"/>'+
-          '<rect x="-12" y="-20" width="24" height="40" rx="3" fill="#cfe0ff"/>'+
-          '<circle cx="0" cy="25" r="2.5" fill="#cfe0ff"/>'+
-          '<g stroke="'+DANGER+'" stroke-width="2.4" fill="none" stroke-linecap="round">'+
-            '<path d="M 22 -22 Q 30 -18 30 -10"/><path d="M 26 -30 Q 40 -24 40 -10"/>'+
-          '</g>'+
-        '</g>';
-    } else if(scene==="phone-pressure"){
-      art = victim(70,52,BLUE,mood,1)+
-        '<g transform="translate(150,55)">'+
-          '<rect x="-16" y="-26" width="32" height="56" rx="7" fill="'+DANGER+'"/>'+
-          '<rect x="-12" y="-20" width="24" height="40" rx="3" fill="#ffe1dc"/>'+
-          '<text x="0" y="6" font-family="sans-serif" font-size="20" font-weight="700" fill="'+DANGER+'" text-anchor="middle">!</text>'+
-        '</g>'+
-        '<g stroke="'+WARN+'" stroke-width="2.4" fill="none" stroke-linecap="round" transform="translate(112,40)">'+
-          '<path d="M 0 0 L 12 -6"/><path d="M 0 8 L 12 8"/><path d="M 0 16 L 12 22"/>'+
-        '</g>';
-    } else if(scene==="money-loss"){
-      art = victim(64,55,BLUE,mood,1)+
-        '<g transform="translate(150,70)">'+
-          '<rect x="-22" y="-14" width="44" height="28" rx="5" fill="#f7d4cf" stroke="'+DANGER+'" stroke-width="2"/>'+
-          '<circle cx="0" cy="0" r="9" fill="#fff" stroke="'+DANGER+'" stroke-width="2"/>'+
-          '<text x="0" y="5" font-family="sans-serif" font-size="12" font-weight="700" fill="'+DANGER+'" text-anchor="middle">&#8361;</text>'+
-        '</g>'+
-        '<g stroke="'+DANGER+'" stroke-width="2.6" fill="none" stroke-linecap="round" transform="translate(104,46)">'+
-          '<path d="M 0 0 L 22 -6"/><path d="M 2 10 L 24 6"/><path d="M 0 20 L 22 18"/>'+
-        '</g>'+
-        '<text x="150" y="120" font-family="sans-serif" font-size="11" font-weight="700" fill="'+DANGER+'" text-anchor="middle">&#8722;&#51060;&#52404;&#50756;&#47308;</text>';
-    } else if(scene==="email-phishing" || scene==="link-trap"){
-      art = victim(58,55,BLUE,mood,1)+
-        '<g transform="translate(140,60)">'+
-          '<rect x="-26" y="-18" width="52" height="36" rx="5" fill="#fff" stroke="'+NAVY+'" stroke-width="2"/>'+
-          '<path d="M -26 -16 L 0 4 L 26 -16" fill="none" stroke="'+NAVY+'" stroke-width="2"/>'+
-          '<circle cx="20" cy="14" r="11" fill="'+DANGER+'"/>'+
-          '<path d="M 16 14 L 24 14 M 22 14 L 19 11 M 22 14 L 19 17" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+
-        '</g>';
-    } else if(scene==="data-leak"){
-      art = '<g transform="translate(100,70)">'+
-          '<rect x="-30" y="-22" width="60" height="44" rx="6" fill="'+NAVY+'"/>'+
-          '<rect x="-22" y="-14" width="44" height="6" rx="3" fill="#cfe0ff"/>'+
-          '<rect x="-22" y="-2" width="32" height="6" rx="3" fill="#cfe0ff"/>'+
-          '<g transform="translate(34,18)"><path d="M 0 0 Q 14 4 14 18" stroke="'+DANGER+'" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="14" cy="18" r="4" fill="'+DANGER+'"/></g>'+
-        '</g>';
-    } else if(scene==="ransomware-lock"){
-      art = '<g transform="translate(100,68)">'+
-          '<rect x="-24" y="-6" width="48" height="40" rx="6" fill="'+DANGER+'"/>'+
-          '<path d="M -14 -6 V -16 a14 14 0 0 1 28 0 V -6" fill="none" stroke="'+NAVY+'" stroke-width="5"/>'+
-          '<circle cx="0" cy="12" r="5" fill="#fff"/><rect x="-2.5" y="12" width="5" height="11" fill="#fff"/>'+
-        '</g>';
-    } else if(scene==="hacker"){
-      art = attacker(100,52,"sinister",1.05)+
-        '<g stroke="#111827" stroke-width="2" fill="none" stroke-linecap="round" transform="translate(150,46)">'+
-          '<path d="M 0 0 L 14 -5"/><path d="M 0 9 L 14 9"/><path d="M 0 18 L 14 23"/>'+
-        '</g>';
-    } else if(scene==="double-check"){
-      art = victim(64,55,BLUE,mood,1)+
-        '<g transform="translate(150,60)">'+
-          '<circle cx="0" cy="0" r="22" fill="#fff" stroke="'+SAFE+'" stroke-width="3"/>'+
-          '<path d="M -10 1 L -3 9 L 12 -8" stroke="'+SAFE+'" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+
-        '</g>';
-    } else {
-      art = victim(58,55,SAFE,mood,1)+
-        '<g transform="translate(146,62)">'+
-          '<path d="M 0 -28 L 26 -18 V 6 Q 26 26 0 36 Q -26 26 -26 6 V -18 Z" fill="'+SAFE+'"/>'+
-          '<path d="M -11 2 L -3 12 L 13 -8" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+
-        '</g>';
-    }
-    return head+art+foot;
-  }
+  /* 캐릭터·장면·한 컷 카드는 모듈 공용(comicFace/comicVictim/comicAttacker/comicSceneSVG/comicPanelCard) 사용 */
 
   var SHIELDMARK='<svg viewBox="0 0 48 56" width="40" height="46" xmlns="http://www.w3.org/2000/svg" style="display:block;">'+
     '<path d="M24 2 L44 10 V28 Q44 46 24 54 Q4 46 4 28 V10 Z" fill="#ffffff" opacity="0.16"/>'+
@@ -305,7 +333,6 @@ function renderComic(nl, label){
     }
   }
   while(panels.length<4){ panels.push({scene:"shield-verify",mood:"relieved",speaker:"안전",speech:tips[0]||"끊고, 직접, 확인!",caption:"오늘의 수칙으로 막습니다"}); }
-  var circled=["①","②","③","④"];
 
   var html='<div style="max-width:640px;margin:0 auto;background:'+PAPER+';border-radius:18px;overflow:hidden;font-family:\'Malgun Gothic\',\'Apple SD Gothic Neo\',sans-serif;color:'+INK+';box-shadow:0 1px 3px rgba(0,0,0,0.08);">';
 
@@ -346,27 +373,7 @@ function renderComic(nl, label){
 
   html+='<div style="padding:16px 24px 4px 24px;">'+sectionTitle("4컷 시나리오: 상황·함정·피해·수칙")+'</div>';
   html+='<div style="padding:4px 24px 8px 24px;display:flex;flex-wrap:wrap;gap:14px;">';
-  for(var k=0;k<panels.length;k++){
-    var p=panels[k]||{};
-    var sc=val(p.scene)||"shield-verify";
-    var md=val(p.mood)||"neutral";
-    var isSafe=(sc==="shield-verify"||sc==="double-check"||md==="relieved"||k===3);
-    var accent=isSafe?SAFE:(k===2?DANGER:(k===1?WARN:BLUE));
-    var bubbleBg=isSafe?"#eafaf0":"#f3f6fc";
-    var bubbleBorder=isSafe?"#bfe8cd":"#dbe5f5";
-    html+='<div style="flex:1 1 calc(50% - 7px);min-width:240px;box-sizing:border-box;border:1px solid '+LINE+';border-radius:14px;overflow:hidden;background:#fff;break-inside:avoid;position:relative;">'+
-      '<div style="position:absolute;top:8px;left:8px;z-index:2;width:30px;height:30px;border-radius:50%;background:'+accent+';color:#fff;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25);">'+circled[k]+'</div>'+
-      sceneSVG(sc,md)+
-      '<div style="padding:12px 12px 4px 12px;">'+
-        (val(p.speaker)?'<div style="font-size:11px;font-weight:800;color:'+accent+';margin-bottom:5px;">'+esc(val(p.speaker))+'</div>':'')+
-        '<div style="position:relative;background:'+bubbleBg+';border:1px solid '+bubbleBorder+';border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:'+INK+';">'+
-          '<span style="position:absolute;top:-7px;left:16px;width:12px;height:12px;background:'+bubbleBg+';border-left:1px solid '+bubbleBorder+';border-top:1px solid '+bubbleBorder+';transform:rotate(45deg);"></span>'+
-          esc(val(p.speech))+
-        '</div>'+
-      '</div>'+
-      (val(p.caption)?'<div style="padding:8px 12px 12px 12px;font-size:12px;color:'+MUT+';border-top:1px dashed '+LINE+';margin-top:8px;">'+esc(val(p.caption))+'</div>':'<div style="height:6px;"></div>')+
-    '</div>';
-  }
+  for(var k=0;k<panels.length;k++){ html+=comicPanelCard(panels[k],k); }
   html+='</div>';
 
   if(val(nl.alert)){
@@ -718,43 +725,8 @@ function renderOnepager(nl, label){
     return '<div style="max-width:680px;margin:0 auto"><div style="font-size:15px;font-weight:800;color:#0a2a5c;display:flex;align-items:center;gap:8px;margin:0 0 12px"><span style="width:4px;height:17px;border-radius:2px;background:#1a56db"></span>🛡️ 만화로 보는 보안수칙'+(label?' <span style="font-size:12px;font-weight:600;color:#8a93a3">· '+esc(label)+'</span>':'')+'</div><div style="display:flex;flex-wrap:wrap;gap:14px">'+cards+'</div></div>';
   }
 
-  /* ====== 세로형(메일 첨부용) 인포그래픽 — 통계+4컷+수칙 한 장 포트레이트 ====== */
-  function evFace(m){
-    if(m==="worried") return '<path d="M-12 -3 L-3 -1 M12 -3 L3 -1" stroke="#1f2937" stroke-width="1.9" stroke-linecap="round"/><circle cx="-7" cy="3" r="2.4" fill="#1f2937"/><circle cx="7" cy="3" r="2.4" fill="#1f2937"/><path d="M-6 12 Q0 8 6 12" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>';
-    if(m==="shocked") return '<path d="M-12 -5 L-3 -6 M12 -5 L3 -6" stroke="#1f2937" stroke-width="1.6" stroke-linecap="round"/><circle cx="-7" cy="2" r="3.2" fill="#fff" stroke="#1f2937" stroke-width="1.6"/><circle cx="-7" cy="2" r="1.4" fill="#1f2937"/><circle cx="7" cy="2" r="3.2" fill="#fff" stroke="#1f2937" stroke-width="1.6"/><circle cx="7" cy="2" r="1.4" fill="#1f2937"/><ellipse cx="0" cy="12" rx="3.5" ry="4.5" fill="#7f1d1d"/>';
-    if(m==="relieved") return '<path d="M-11 1 Q-7 -4 -3 1 M3 1 Q7 -4 11 1" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M-6 10 Q0 16 6 10" stroke="#1f2937" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
-    return '<circle cx="-7" cy="2" r="2.4" fill="#1f2937"/><circle cx="7" cy="2" r="2.4" fill="#1f2937"/><path d="M-6 11 L6 11" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>';
-  }
-  function evChar(body, m){
-    return '<g transform="translate(78,78)"><ellipse cx="0" cy="44" rx="26" ry="19" fill="'+body+'"/><circle cx="0" cy="4" r="22" fill="#f7d9b8"/><path d="M-22 -2 Q0 -28 22 -2 Q16 -13 0 -15 Q-16 -13 -22 -2 Z" fill="#0a2a5c"/>'+evFace(m)+"</g>";
-  }
-  function evProp(scene){
-    if(/shield|verify|double|report|신고/.test(scene)) return '<g transform="translate(216,62)"><path d="M0 -32 L28 -21 V5 Q28 27 0 38 Q-28 27 -28 5 V-21 Z" fill="#16a34a"/><path d="M-13 3 L-4 13 L15 -10" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>';
-    if(/money|loss|leak|data/.test(scene)) return '<g transform="translate(215,66)"><rect x="-26" y="-16" width="52" height="32" rx="5" fill="#f7d4cf" stroke="#c0392b" stroke-width="2"/><circle cx="0" cy="0" r="11" fill="#fff" stroke="#c0392b" stroke-width="2"/><text x="0" y="5" font-size="13" font-weight="800" fill="#c0392b" text-anchor="middle">₩</text></g>';
-    if(/link|trap|attach|첨부|url/.test(scene)) return '<g transform="translate(212,62)"><rect x="-30" y="-30" width="60" height="46" rx="8" fill="#fff" stroke="#c77800" stroke-width="2.5"/><g transform="translate(0,-12)"><ellipse cx="-8" cy="0" rx="8" ry="5.5" fill="none" stroke="#1a56db" stroke-width="3"/><ellipse cx="8" cy="0" rx="8" ry="5.5" fill="none" stroke="#1a56db" stroke-width="3"/></g><rect x="-20" y="2" width="40" height="5" rx="2.5" fill="#dbe5f5"/><rect x="-20" y="11" width="28" height="5" rx="2.5" fill="#dbe5f5"/><path d="M-18 16 L-18 28 L-6 16 Z" fill="#fff" stroke="#c77800" stroke-width="2.5"/></g>';
-    return '<g transform="translate(215,62)"><rect x="-22" y="-34" width="44" height="68" rx="8" fill="#0a2a5c"/><rect x="-17" y="-27" width="34" height="46" rx="3" fill="#cfe0ff"/><rect x="-12" y="-20" width="24" height="6" rx="3" fill="#fff"/><rect x="-12" y="-9" width="18" height="5" rx="2.5" fill="#fff"/>'+(/pressure|call|voice|phone/.test(scene)?'<text x="0" y="34" font-size="16" font-weight="900" fill="#c0392b" text-anchor="middle">!</text>':"")+"</g>";
-  }
-  function evPanelBg(scene, mood){
-    if(/shield|verify|double|report|신고/.test(scene)||mood==="relieved") return "#eafaf0";
-    if(/money|loss|leak/.test(scene)||mood==="shocked") return "#fdecea";
-    if(/link|trap|첨부/.test(scene)||mood==="worried") return "#fff4e6";
-    return "#eef3fb";
-  }
-  function evPanel(p, i){
-    p = p||{};
-    var safe=/shield|verify|double|report/.test(p.scene||"")||p.mood==="relieved";
-    var body=safe?"#16a34a":"#1a56db";
-    var bubBg=safe?"#eafaf0":"#f3f6fc", bubBd=safe?"#bfe8cd":"#dbe5f5";
-    var spk=p.mood==="shocked"?"#c0392b":(p.mood==="worried"?"#c77800":(safe?"#16a34a":"#1a56db"));
-    var badge=safe?"#16a34a":(p.mood==="shocked"?"#c0392b":(p.mood==="worried"?"#c77800":"#1a56db"));
-    var NUM=["①","②","③","④","⑤","⑥"];
-    return '<div style="flex:1 1 calc(50% - 7px);min-width:280px;box-sizing:border-box;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;background:#fff;position:relative;break-inside:avoid">'+
-      '<div style="position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;background:'+badge+';color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;z-index:2">'+(NUM[i]||(i+1))+"</div>"+
-      '<svg viewBox="0 0 316 150" width="100%" height="140" style="display:block;background:'+evPanelBg(p.scene,p.mood)+'">'+evChar(body,p.mood)+evProp(p.scene||"")+"</svg>"+
-      (p.speech?'<div style="padding:11px 13px 4px"><div style="font-size:11px;font-weight:800;color:'+spk+'">'+esc(p.speaker||"")+'</div><div style="font-size:13px;line-height:1.45;color:#1f2937;margin-top:3px;background:'+bubBg+";border:1px solid "+bubBd+';border-radius:10px;padding:8px 10px">'+esc(p.speech)+"</div></div>":"")+
-      (p.caption?'<div style="padding:6px 13px 12px;font-size:12px;color:#6b7280">'+esc(p.caption)+"</div>":"")+
-    "</div>";
-  }
+  /* ====== 세로형(메일 첨부용) 인포그래픽 — 통계+4컷+수칙 한 장 포트레이트 ======
+     4컷 만화는 가로 만화형과 동일한 그림체(comicPanelCard)를 그대로 사용한다. */
   function buildEmailVertical(nl, label){
     nl = nl||{};
     var ig = nl.infographic||{};
@@ -769,7 +741,7 @@ function renderOnepager(nl, label){
     var statsRow = cards.length?'<div style="display:flex;border-bottom:1px solid #eef1f6">'+cards.join("")+"</div>":"";
 
     var panels=(nl.comic && nl.comic.panels && nl.comic.panels.length)?nl.comic.panels:[];
-    var comicSec = panels.length?'<div style="padding:20px 24px 6px"><div style="font-size:16px;font-weight:800;color:#0a2a5c;display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:5px;height:18px;border-radius:2px;background:#1a56db"></span>4컷으로 보는 이달의 위협</div><div style="display:flex;flex-wrap:wrap;gap:13px">'+panels.slice(0,4).map(evPanel).join("")+"</div></div>":"";
+    var comicSec = panels.length?'<div style="padding:16px 24px 8px"><div style="font-size:16px;font-weight:800;color:#0a2a5c;display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="width:5px;height:18px;border-radius:2px;background:#1a56db"></span>4컷으로 보는 이달의 위협</div><div style="display:flex;flex-wrap:wrap;gap:14px">'+panels.slice(0,4).map(comicPanelCard).join("")+"</div></div>":"";
 
     var tips=tipsList(nl);
     var tipsSec = tips.length?'<div style="padding:14px 24px 8px"><div style="font-size:16px;font-weight:800;color:#0f6e56;display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="width:5px;height:18px;border-radius:2px;background:#16a34a"></span>✅ 오늘의 보안수칙</div><div style="background:linear-gradient(135deg,#f0faf5,#eefcff);border:1px solid #c7ecd8;border-radius:14px;padding:14px 18px">'+tips.map(function(t,i){return '<div style="display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5;color:#243244;margin:7px 0"><b style="color:#0f6e56">'+(i+1)+'.</b> '+esc(t)+"</div>";}).join("")+"</div></div>":"";
