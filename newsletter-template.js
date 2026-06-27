@@ -617,6 +617,58 @@ function renderOnepager(nl, label){
   return html;
 }
 
+  /* ====== 인포그래픽형 렌더 (NotebookLM 스타일·코드 SVG) ====== */
+  function renderInfographic(nl, label){
+    nl = nl || {};
+    var ig = nl.infographic || {};
+    var v = function(x){ return x==null?"":String(x); };
+    var TONE = { danger:"#c0392b", warn:"#c77800", ok:"#16a34a", blue:"#1a56db", navy:"#0a2a5c" };
+    function sec(t){ return '<div style="font-size:14px;font-weight:800;color:#0a2a5c;display:flex;align-items:center;gap:7px;margin-bottom:12px"><span style="width:4px;height:16px;background:#1a56db;border-radius:2px"></span>'+esc(t)+"</div>"; }
+    function gauge(value, max, color){
+      var f = Math.max(0, Math.min(1, (parseFloat(value)||0)/(parseFloat(max)||3)));
+      var ang = Math.PI*(1-f);
+      var ex = (60 + 48*Math.cos(ang)).toFixed(1), ey = (60 - 48*Math.sin(ang)).toFixed(1);
+      return '<svg viewBox="0 0 120 70" width="108" height="62"><path d="M12 60 A48 48 0 0 1 108 60" fill="none" stroke="#eef1f6" stroke-width="11" stroke-linecap="round"/>'+
+        '<path d="M12 60 A48 48 0 0 1 '+ex+" "+ey+'" fill="none" stroke="'+color+'" stroke-width="11" stroke-linecap="round"/>'+
+        '<text x="60" y="56" font-size="22" font-weight="900" fill="'+color+'" text-anchor="middle">'+esc(v(value))+"</text></svg>";
+    }
+
+    var head = '<div style="padding:22px 26px 18px;border-bottom:3px solid #1a56db">'+
+      '<div style="font-size:12px;font-weight:800;color:#1a56db;letter-spacing:.5px">🛡️ '+esc(label)+' · 정보보호의 날</div>'+
+      '<div style="font-size:22px;font-weight:900;color:#0a2a5c;line-height:1.25;margin-top:6px">'+esc(nl.subject||"이달의 보안 인포그래픽")+"</div>"+
+      (nl.intro?'<div style="font-size:13px;color:#6b7280;line-height:1.55;margin-top:6px">'+mdi(nl.intro)+"</div>":"")+"</div>";
+
+    var donut="", files="", note="";
+    if(ig.donut && ig.donut.value){
+      var dv=Math.max(0,Math.min(100,parseFloat(ig.donut.value)||0)), circ=289, dash=(dv/100*circ).toFixed(1);
+      donut='<div style="flex:1 1 150px;min-width:150px;text-align:center"><svg viewBox="0 0 120 120" width="116" height="116"><circle cx="60" cy="60" r="46" fill="none" stroke="#eef1f6" stroke-width="15"/><circle cx="60" cy="60" r="46" fill="none" stroke="#e8602c" stroke-width="15" stroke-linecap="round" stroke-dasharray="'+dash+" "+circ+'" transform="rotate(-90 60 60)"/><text x="60" y="58" font-size="29" font-weight="900" fill="#c0392b" text-anchor="middle">'+esc(ig.donut.value)+'</text><text x="60" y="77" font-size="10" fill="#6b7280" text-anchor="middle">'+esc(ig.donut.label||"")+"</text></svg>"+(ig.donut.caption?'<div style="font-size:12px;color:#44506b;font-weight:600;margin-top:2px;line-height:1.4">'+esc(ig.donut.caption)+"</div>":"")+"</div>";
+    }
+    var ft=(ig.file_types||[]).filter(function(x){return x&&x.label;});
+    if(ft.length){
+      files='<div style="flex:1 1 150px;min-width:150px"><div style="font-size:12px;font-weight:700;color:#44506b;margin-bottom:8px">악성 첨부 파일 형식</div><div style="display:flex;gap:10px">'+
+        ft.slice(0,3).map(function(x,i){var c=i===0?"#c77800":"#c0392b",bg=i===0?"#fff4e6":"#fdecea",bd=i===0?"#f0d49a":"#f3c0ba";return '<div style="flex:1;text-align:center;background:'+bg+";border:1px solid "+bd+';border-radius:10px;padding:10px 4px"><div style="font-size:11px;font-weight:800;color:'+c+'">'+esc(x.label)+'</div><div style="font-size:20px;font-weight:900;color:#0a2a5c">'+esc(x.pct||"")+"</div></div>";}).join("")+"</div></div>";
+    }
+    if(ig.note && (ig.note.title||ig.note.body)){
+      note='<div style="flex:1 1 150px;min-width:150px"><div style="font-size:12px;font-weight:800;color:#0a2a5c;margin-bottom:6px">'+esc(ig.note.title||"")+'</div><div style="font-size:11.5px;color:#6b7280;line-height:1.5">'+esc(ig.note.body||"")+"</div></div>";
+    }
+    var threatRow="";
+    if(donut||files||note){ threatRow='<div style="padding:18px 26px 6px">'+sec("위협 분석 · 이달의 공격 트렌드")+'<div style="display:flex;flex-wrap:wrap;gap:14px">'+donut+files+note+"</div></div>"; }
+    else { var st=(nl.stats||[]).filter(function(s){return s&&s.value;}).slice(0,3); if(st.length){ threatRow='<div style="padding:18px 26px 6px">'+sec("핵심 지표")+'<div style="display:flex;gap:12px">'+st.map(function(s){return '<div style="flex:1;text-align:center;background:#fafbfd;border:1px solid #eef1f6;border-radius:12px;padding:14px 8px"><div style="font-size:22px;font-weight:900;color:#c0392b">'+esc(s.value)+'</div><div style="font-size:11px;color:#6b7280;margin-top:4px">'+esc(s.label||"")+"</div></div>";}).join("")+"</div></div>"; } }
+
+    var stages=(ig.stages||[]).filter(function(s){return s&&(s.name||s.value);}), stageRow="";
+    if(stages.length){ stageRow='<div style="padding:14px 26px 6px">'+sec("공격 단계")+'<div style="display:flex;gap:10px">'+
+      stages.slice(0,3).map(function(s){var c=TONE[s.tone]||"#1a56db";return '<div style="flex:1;background:#fafbfd;border:1px solid #eef1f6;border-radius:12px;padding:12px 8px;text-align:center"><div style="font-size:11px;font-weight:700;color:#6b7280">'+esc(s.stage||"")+'</div><div style="font-size:13px;font-weight:800;color:'+c+';margin:3px 0 4px">'+esc(s.name||"")+"</div>"+gauge(s.value,s.max||3,c)+'<div style="font-size:10px;color:#9aa3b2">'+esc(s.sub||"")+"</div></div>";}).join("")+"</div></div>"; }
+
+    var tips=tipsList(nl);
+    var dmg=(ig.damage && ig.damage.value)?'<div style="flex:1 1 180px;min-width:180px;background:linear-gradient(135deg,#0a2a5c,#123a7a);color:#fff;border-radius:12px;padding:14px 16px;break-inside:avoid"><div style="font-size:12px;color:#9db8e8;font-weight:700">'+esc(ig.damage.label||"피해 규모")+'</div><div style="font-size:24px;font-weight:900;line-height:1.1;margin:4px 0">'+esc(ig.damage.value)+"</div>"+(ig.damage.note?'<div style="font-size:11.5px;color:#cfe0ff">'+esc(ig.damage.note)+"</div>":"")+"</div>":"";
+    var CK='<svg viewBox="0 0 28 28" width="26" height="26" style="flex:0 0 auto"><circle cx="14" cy="14" r="13" fill="#e7f7ee"/><path d="M9 14 L12.5 17.5 L20 10" stroke="#16a34a" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    var tipItems=tips.length?'<div style="flex:2 1 280px;min-width:260px">'+tips.slice(0,5).map(function(t){return '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">'+CK+'<div style="font-size:12.5px;line-height:1.45">'+esc(t)+"</div></div>";}).join("")+"</div>":"";
+    var actionRow=(dmg||tipItems)?'<div style="padding:14px 26px 8px">'+sec("현장 대응 · 오늘의 보안수칙")+'<div style="display:flex;flex-wrap:wrap;gap:12px">'+dmg+tipItems+"</div></div>":"";
+
+    var foot='<div style="background:#f4f6fa;color:#8a93a3;font-size:11px;text-align:center;padding:11px;margin-top:8px">secuday.jbax.co.kr · 정보보호팀 — 매월 1일 정보보호의 날</div>';
+    return '<div style="max-width:680px;margin:0 auto;background:#fff;color:#1f2937;border-radius:16px;overflow:hidden;border:1px solid #e3e9f2;font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',\'Noto Sans KR\',-apple-system,sans-serif">'+head+threatRow+stageRow+actionRow+foot+"</div>";
+  }
+
   /* 포맷 디스패처: nl.format → 해당 렌더러(함수 없으면 표준형으로 안전 폴백) */
   function renderNewsletterFull(nl, label){
     nl = nl || {};
@@ -624,6 +676,7 @@ function renderOnepager(nl, label){
     if (f === "comic" && typeof renderComic === "function") return renderComic(nl, label);
     if (f === "card" && typeof renderCard === "function") return renderCard(nl, label);
     if (f === "onepager" && typeof renderOnepager === "function") return renderOnepager(nl, label);
+    if (f === "infographic" && typeof renderInfographic === "function") return renderInfographic(nl, label);
     return renderStandard(nl, label);
   }
 

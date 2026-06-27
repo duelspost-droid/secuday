@@ -702,7 +702,8 @@ function renderNewsletterForm(nl) {
     <label>포맷
       <select id="nlf-format">
         <option value="comic"${fmt === "comic" ? " selected" : ""}>💬 만화형</option>
-        <option value="card"${fmt === "card" ? " selected" : ""}>🃏 카드/인포그래픽</option>
+        <option value="card"${fmt === "card" ? " selected" : ""}>🃏 카드형</option>
+        <option value="infographic"${fmt === "infographic" ? " selected" : ""}>📊 인포그래픽</option>
         <option value="standard"${fmt === "standard" ? " selected" : ""}>🛡️ 표준형</option>
         <option value="onepager"${fmt === "onepager" ? " selected" : ""}>📄 원페이저</option>
       </select>
