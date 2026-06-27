@@ -1,0 +1,55 @@
+name: 월간 뉴스레터 자동 생성
+
+# 매월 25일경 다음 달 '정보보호의 날' 인포그래픽 뉴스레터를 미리 생성·저장한다.
+# (관리자가 1일 발송 전에 검토·수정할 시간을 확보)
+# 실제 콘텐츠 생성에는 Supabase의 ANTHROPIC_API_KEY 크레딧이 필요하다.
+
+on:
+  schedule:
+    - cron: "0 0 25 * *"   # 25일 00:00 UTC = 25일 09:00 KST
+  workflow_dispatch:        # 수동 실행 가능
+    inputs:
+      month:
+        description: "대상 월 (YYYY-MM, 비우면 다음 달)"
+        required: false
+      format:
+        description: "포맷 (infographic/comic/card/standard/onepager)"
+        required: false
+        default: infographic
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 대상 월 계산
+        id: m
+        run: |
+          MONTH="${{ github.event.inputs.month }}"
+          if [ -z "$MONTH" ]; then
+            MONTH=$(date -u -d "$(date -u +%Y-%m-01) +1 month" +%Y-%m)
+          fi
+          echo "month=$MONTH" >> "$GITHUB_OUTPUT"
+          echo "대상 월: $MONTH"
+
+      - name: 인포그래픽 뉴스레터 생성·저장
+        env:
+          # Supabase publishable key(공개값). 필요 시 repo Secret SUPABASE_ANON_KEY로 덮어쓸 수 있음.
+          SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'sb_publishable_DckNy92c8WFGYWNPRsEjag_q-JQs9km' }}
+          MONTH: ${{ steps.m.outputs.month }}
+          FORMAT: ${{ github.event.inputs.format }}
+        run: |
+          FMT="${FORMAT:-infographic}"
+          echo "생성: $MONTH · 포맷=$FMT"
+          HTTP=$(curl -sS -o resp.json -w "%{http_code}" -X POST \
+            "https://nrdapzgtibbusvoaceuh.supabase.co/functions/v1/generate-newsletter" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Content-Type: application/json" \
+            --max-time 180 \
+            -d "{\"month\":\"${MONTH}\",\"format\":\"${FMT}\",\"save\":true}")
+          echo "HTTP $HTTP"; cat resp.json; echo
+          if ! grep -q '"saved":true' resp.json; then
+            echo "::error::생성/저장 실패 (HTTP $HTTP) — Anthropic 크레딧 또는 함수 배포 확인"
+            exit 1
+          fi
+          echo "✅ $MONTH 인포그래픽 뉴스레터 저장 완료"
