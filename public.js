@@ -112,11 +112,14 @@ function renderDetail() {
   $("#nl-preview").innerHTML = nl
     ? NewsletterTemplate.renderNewsletterFull(nl, NewsletterTemplate.monthLabel(current.month))
     : fallbackMaterialHTML(c);
-  // 🛡️ 만화로 보는 보안수칙 (수칙을 만화풍 카드로 — 웹 전용 섹션)
-  const rulesTips = nl && Array.isArray(nl.tips) ? nl.tips : [];
-  $("#rules-section").innerHTML = rulesTips.length
-    ? NewsletterTemplate.renderRulesComic(rulesTips, NewsletterTemplate.monthLabel(current.month))
-    : "";
+  // 🛡️ 만화로 보는 보안수칙 — 월별 이미지(assets/comic-<월>.png) 우선 노출, 없으면 자동 숨김
+  const comicSrc = `assets/comic-${current.month}.png`;
+  $("#rules-section").innerHTML = `
+    <div class="rules-comic-wrap">
+      <h3 class="rules-comic-h">🛡️ 만화로 보는 보안수칙</h3>
+      <img class="rules-comic-img" src="${comicSrc}" alt="만화로 보는 보안수칙"
+           onerror="this.closest('.rules-comic-wrap').remove()">
+    </div>`;
   const url = posterUrl(c.poster_path);
   $("#poster-section").innerHTML = c.poster_path
     ? (c.poster_path.endsWith(".pdf")
