@@ -112,11 +112,9 @@ function renderDetail() {
   $("#nl-preview").innerHTML = nl
     ? NewsletterTemplate.renderNewsletterFull(nl, NewsletterTemplate.monthLabel(current.month))
     : fallbackMaterialHTML(c);
-  // 🛡️ 만화로 보는 보안수칙 (수칙을 만화풍 카드로 — 웹 전용 섹션)
-  const rulesTips = nl && Array.isArray(nl.tips) ? nl.tips : [];
-  $("#rules-section").innerHTML = rulesTips.length
-    ? NewsletterTemplate.renderRulesComic(rulesTips, NewsletterTemplate.monthLabel(current.month))
-    : "";
+  // 🛡️ '만화로 보는 보안수칙'은 별도 코드 만화 섹션을 제거 — 버전 이력에서 선택한
+  //    버전(만화/인포그래픽/NotebookLM·Napkin 이미지 등)이 위 #nl-preview에 그대로 표시된다.
+  $("#rules-section").innerHTML = "";
   const url = posterUrl(c.poster_path);
   $("#poster-section").innerHTML = c.poster_path
     ? (c.poster_path.endsWith(".pdf")

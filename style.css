@@ -310,6 +310,11 @@ main { max-width: 1080px; margin: 0 auto; padding: 24px; }
   .nl-toolbar { gap: 6px; }
 }
 
+/* ---------- 공개 페이지: 만화로 보는 보안수칙 (이미지) ---------- */
+.rules-comic-wrap { margin: 22px auto; max-width: 820px; text-align: center; }
+.rules-comic-h { font-size: 18px; color: #0a2a5c; margin: 0 0 12px; }
+.rules-comic-img { max-width: 100%; height: auto; border-radius: 14px; border: 1px solid #e3e9f2; box-shadow: 0 2px 12px rgba(0, 0, 0, .06); }
+
 /* ---------- 버전 이력: 미리보기 카드 갤러리 ---------- */
 .ver-gallery { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; }
 .ver-card { width: 320px; max-width: 100%; border: 1px solid var(--border, #e3e9f2); border-radius: 12px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
