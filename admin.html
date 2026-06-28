@@ -115,6 +115,7 @@
             <button class="btn" onclick="editNewsletter()">✏️ 수동 편집</button>
             <button class="btn" onclick="downloadNewsletterPdf()">📄 PDF 다운로드</button>
             <button class="btn" onclick="downloadEmailVerticalPdf()" title="통계+4컷+수칙을 세로 한 장(A4 세로)으로 — 메일에 첨부하기 좋게">📧 세로형(메일첨부)</button>
+            <button class="btn" onclick="openAddImageVersion()" title="NotebookLM·Napkin 등 외부 이미지를 한 버전으로 추가 → 버전 이력에서 썸네일로 비교·선택">🖼️ 이미지 버전 추가</button>
           </div>
           <p id="nl-status" class="nl-status"></p>
           <div id="nl-preview" class="nl-preview"></div>
@@ -197,6 +198,36 @@
         <button class="btn small" onclick="closeVersionPreview()">닫기</button>
       </div>
       <div id="ver-modal-body" class="ver-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 이미지 버전 추가 모달 (NotebookLM·Napkin 등 외부 이미지) -->
+  <div id="img-modal" class="ver-modal" hidden onclick="if(event.target===this)closeAddImageVersion()">
+    <div class="ver-modal-box" style="max-width:540px">
+      <div class="ver-modal-head">
+        <span>🖼️ 이미지 버전 추가</span>
+        <span class="spacer"></span>
+        <button class="btn small" onclick="closeAddImageVersion()">닫기</button>
+      </div>
+      <div class="ver-modal-body" style="background:#fff">
+        <p class="hint">NotebookLM·Napkin·Canva 등에서 만든 이미지를 한 <b>버전</b>으로 추가합니다. 저장하면 <b>버전 이력</b> 갤러리에서 썸네일로 비교하고 ‘이 버전 선택’으로 결정할 수 있습니다.</p>
+        <label>출처
+          <select id="img-source">
+            <option>NotebookLM</option>
+            <option>Napkin</option>
+            <option>Canva</option>
+            <option>기타</option>
+          </select>
+        </label>
+        <label>제목 <input id="img-subject" type="text" placeholder="예: 메신저 피싱 4컷 (세로)"></label>
+        <label>설명(선택) <input id="img-caption" type="text" placeholder="간단한 캡션 (이미지 아래 표시)"></label>
+        <label>이미지 파일 <input id="img-file" type="file" accept="image/png,image/jpeg,image/webp" onchange="onImgFile(event)"></label>
+        <div id="img-preview" style="margin:10px 0"></div>
+        <div class="actions">
+          <button class="btn primary" id="img-save" onclick="saveImageVersion()" disabled>새 버전으로 저장</button>
+          <button class="btn" onclick="closeAddImageVersion()">취소</button>
+        </div>
+      </div>
     </div>
   </div>
 

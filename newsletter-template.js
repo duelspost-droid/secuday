@@ -677,9 +677,30 @@ function renderOnepager(nl, label){
   }
 
   /* 포맷 디스패처: nl.format → 해당 렌더러(함수 없으면 표준형으로 안전 폴백) */
+  /* 외부 이미지 버전(NotebookLM·Napkin·Canva 등) — 이미지를 그대로 한 장으로 */
+  function safeImg(u){ u = String(u==null?"":u); return (/^data:image\/(png|jpe?g|gif|webp|svg\+xml);/i.test(u) || /^https?:\/\//i.test(u)) ? u : ""; }
+  function renderImage(nl, label){
+    nl = nl || {};
+    var src = safeImg(nl.image || nl.image_url || "");
+    var subject = esc(nl.subject || "이달의 보안 비주얼");
+    var srcLabel = nl.source ? esc(nl.source) : "";
+    return '<div style="max-width:680px;margin:0 auto;background:#fff;color:#1f2937;border-radius:16px;overflow:hidden;border:1px solid #e3e9f2;font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',\'Noto Sans KR\',-apple-system,sans-serif">'+
+      '<div style="background:linear-gradient(135deg,#0a2a5c,#123a7a);color:#fff;padding:18px 22px">'+
+        '<div style="font-size:12px;font-weight:800;color:#9db8e8;letter-spacing:.3px">🛡️ '+esc(label)+' · 정보보호의 날'+(srcLabel?' · '+srcLabel:'')+'</div>'+
+        '<div style="font-size:19px;font-weight:900;line-height:1.3;margin-top:6px">'+subject+'</div>'+
+      '</div>'+
+      (src
+        ? '<img src="'+src+'" alt="'+escAttr(nl.subject||"보안 비주얼")+'" style="display:block;width:100%;height:auto">'
+        : '<div style="padding:40px;text-align:center;color:#9aa3b2">이미지를 불러올 수 없습니다</div>')+
+      (nl.caption ? '<div style="padding:12px 22px;font-size:13px;color:#44506b;line-height:1.6">'+esc(nl.caption)+'</div>' : '')+
+      '<div style="background:#0a2a5c;color:#9db9e8;font-size:12px;text-align:center;padding:12px">🛡️ secuday · 정보보호팀 — 매월 1일 정보보호의 날</div>'+
+    '</div>';
+  }
+
   function renderNewsletterFull(nl, label){
     nl = nl || {};
     var f = nl.format;
+    if (f === "image" && typeof renderImage === "function") return renderImage(nl, label);
     if (f === "comic" && typeof renderComic === "function") return renderComic(nl, label);
     if (f === "card" && typeof renderCard === "function") return renderCard(nl, label);
     if (f === "onepager" && typeof renderOnepager === "function") return renderOnepager(nl, label);

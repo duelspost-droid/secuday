@@ -327,7 +327,7 @@ function switchTab(name) {
 
 /* ---------- 버전 이력 ---------- */
 const SOURCE_LABEL = { manual: "수동", ai: "AI", rollback: "롤백" };
-const FORMAT_LABEL = { comic: "💬 만화형", card: "🃏 카드형", infographic: "📊 인포그래픽", standard: "🛡️ 표준형", onepager: "📄 원페이저" };
+const FORMAT_LABEL = { comic: "💬 만화형", card: "🃏 카드형", infographic: "📊 인포그래픽", standard: "🛡️ 표준형", onepager: "📄 원페이저", image: "🖼️ 이미지" };
 let versionCache = {};   // version_no -> 버전 행(미리보기 렌더용)
 
 /* 버전 1개의 미리보기 HTML — 뉴스레터가 있으면 그 포맷 그대로, 없으면 자료 본문으로 */
@@ -862,6 +862,79 @@ async function saveNewsletter() {
     toast(`뉴스레터가 v${data.version_no}로 저장되었습니다.`);
   } catch (e) {
     toast(e.message || "저장 중 오류가 발생했습니다.", true);
+  }
+}
+
+/* ---------- 이미지 버전 추가 (NotebookLM·Napkin 등 외부 이미지) ---------- */
+let imgDataUrl = null;
+
+function openAddImageVersion() {
+  if (!current) { toast("자료를 먼저 선택하세요.", true); return; }
+  imgDataUrl = null;
+  $("#img-source").value = "NotebookLM";
+  $("#img-subject").value = "";
+  $("#img-caption").value = "";
+  $("#img-file").value = "";
+  $("#img-preview").innerHTML = "";
+  $("#img-save").disabled = true;
+  $("#img-modal").hidden = false;
+}
+function closeAddImageVersion() { $("#img-modal").hidden = true; imgDataUrl = null; }
+
+/* 파일 → 다운스케일(최대 1000px) → JPEG data URI (jsonb 보관 크기 절감) */
+function onImgFile(e) {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 1000;
+      const scale = Math.min(1, maxW / img.width);
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      const ctx = cv.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);   // 투명 PNG → 흰 배경
+      ctx.drawImage(img, 0, 0, w, h);
+      imgDataUrl = cv.toDataURL("image/jpeg", 0.85);
+      $("#img-preview").innerHTML =
+        `<img src="${imgDataUrl}" style="max-width:100%;border:1px solid #e3e9f2;border-radius:8px;display:block">` +
+        `<div style="font-size:11px;color:#8a93a3;margin-top:4px">${w}×${h} · ${Math.round(imgDataUrl.length / 1024)}KB</div>`;
+      $("#img-save").disabled = false;
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(f);
+}
+
+async function saveImageVersion() {
+  if (!current || !imgDataUrl) { toast("이미지를 선택하세요.", true); return; }
+  const source = $("#img-source").value;
+  const subject = $("#img-subject").value.trim() || `${source} 비주얼`;
+  const caption = $("#img-caption").value.trim();
+  const c = current.current;
+  const nl = { format: "image", source, subject, caption, image: imgDataUrl };
+  try {
+    const { data, error } = await sb.rpc("add_version", {
+      p_material_id: current.id,
+      p_title: c.title,
+      p_theme: c.theme,
+      p_content: c.content,
+      p_rules: c.rules || [],
+      p_poster_path: null,
+      p_change_note: `${source} 이미지 버전`,
+      p_change_source: "manual",
+      p_newsletter: nl,
+    });
+    if (error) throw error;
+    closeAddImageVersion();
+    current = await fetchMaterial(current.id);
+    renderDetail();
+    toast(`${source} 이미지가 v${data.version_no}로 저장되었습니다. 버전 이력에서 비교·선택하세요.`);
+    switchTab("history");
+  } catch (e) {
+    toast(e.message || "이미지 버전 저장 중 오류가 발생했습니다.", true);
   }
 }
 
