@@ -669,8 +669,13 @@ function renderOnepager(nl, label){
     var tips=tipsList(nl);
     var dmg=(ig.damage && ig.damage.value)?'<div style="flex:1 1 180px;min-width:180px;background:linear-gradient(135deg,#0a2a5c,#123a7a);color:#fff;border-radius:12px;padding:14px 16px;break-inside:avoid"><div style="font-size:12px;color:#9db8e8;font-weight:700">'+esc(ig.damage.label||"피해 규모")+'</div><div style="font-size:24px;font-weight:900;line-height:1.1;margin:4px 0">'+esc(ig.damage.value)+"</div>"+(ig.damage.note?'<div style="font-size:11.5px;color:#cfe0ff">'+esc(ig.damage.note)+"</div>":"")+"</div>":"";
     var CK='<svg viewBox="0 0 28 28" width="26" height="26" style="flex:0 0 auto"><circle cx="14" cy="14" r="13" fill="#e7f7ee"/><path d="M9 14 L12.5 17.5 L20 10" stroke="#16a34a" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    var tipItems=tips.length?'<div style="flex:2 1 280px;min-width:260px">'+tips.slice(0,5).map(function(t){return '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">'+CK+'<div style="font-size:12.5px;line-height:1.45">'+esc(t)+"</div></div>";}).join("")+"</div>":"";
-    var actionRow=(dmg||tipItems)?'<div style="padding:14px 26px 8px">'+sec("현장 대응 · 오늘의 보안수칙")+'<div style="display:flex;flex-wrap:wrap;gap:12px">'+dmg+tipItems+"</div></div>":"";
+    var rulesImg=safeImg(nl.rules_image||nl.rules_comic_image);
+    var hasComic=!!rulesImg;
+    // 만화 이미지: 보안수칙 섹션 상단에 반응형으로 렌더 (XSS 안전: safeImg 검증 + escAttr)
+    var rulesComic=rulesImg?'<div style="margin-bottom:12px"><img src="'+escAttr(rulesImg)+'" alt="보안수칙 만화" style="width:100%;max-width:100%;height:auto;display:block;border-radius:12px;border:1px solid #eef1f6"/>'+(nl.rules_image_caption?'<div style="font-size:11px;color:#9aa3b2;text-align:center;margin-top:5px">'+esc(nl.rules_image_caption)+"</div>":"")+"</div>":"";
+    // 텍스트 보안수칙: 모든 내용 유지. 만화가 있으면 보조로 축소 표시.
+    var tipItems=tips.length?'<div style="flex:2 1 280px;min-width:260px">'+(hasComic?'<div style="font-size:11px;font-weight:700;color:#9aa3b2;margin-bottom:6px">텍스트 보안수칙</div>':"")+tips.slice(0,5).map(function(t){return '<div style="display:flex;align-items:flex-start;gap:'+(hasComic?"8px":"10px")+';margin-bottom:'+(hasComic?"6px":"8px")+'"><div style="flex:0 0 auto;transform:scale('+(hasComic?"0.78":"1")+');transform-origin:left top">'+CK+'</div><div style="font-size:'+(hasComic?"11.5":"12.5")+'px;line-height:1.45;color:'+(hasComic?"#6b7280":"#1f2937")+'">'+esc(t)+"</div></div>";}).join("")+"</div>":"";
+    var actionRow=(rulesComic||dmg||tipItems)?'<div style="padding:14px 26px 8px">'+sec("현장 대응 · 오늘의 보안수칙")+rulesComic+'<div style="display:flex;flex-wrap:wrap;gap:12px">'+dmg+tipItems+"</div></div>":"";
 
     // 주요 사례·뉴스 (headlines) — 기사 내용 포함
     var hl=(nl.headlines||[]).filter(function(h){return h&&h.title;}), casesRow="";
