@@ -111,6 +111,7 @@
               </select>
             </label>
             <button class="btn primary" id="nl-generate" onclick="generateNewsletter()">✨ AI 자동 생성</button>
+            <button class="btn" id="nl-load-draft" onclick="loadAutoDraft()" title="매월 백엔드(cron)가 만든 자동 초안을 불러와 검토·발행">📥 자동 초안 불러오기 <span id="nl-autodraft-dot" hidden>●</span></button>
             <button class="btn" onclick="aiEditNewsletter()">🤖 AI로 수정</button>
             <button class="btn" onclick="editNewsletter()">✏️ 수동 편집</button>
             <button class="btn" onclick="downloadNewsletterPdf()">📄 PDF 다운로드</button>
