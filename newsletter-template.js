@@ -670,14 +670,26 @@ function renderOnepager(nl, label){
     var dmg=(ig.damage && ig.damage.value)?'<div style="flex:1 1 180px;min-width:180px;background:linear-gradient(135deg,#0a2a5c,#123a7a);color:#fff;border-radius:12px;padding:14px 16px;break-inside:avoid"><div style="font-size:12px;color:#9db8e8;font-weight:700">'+esc(ig.damage.label||"피해 규모")+'</div><div style="font-size:24px;font-weight:900;line-height:1.1;margin:4px 0">'+esc(ig.damage.value)+"</div>"+(ig.damage.note?'<div style="font-size:11.5px;color:#cfe0ff">'+esc(ig.damage.note)+"</div>":"")+"</div>":"";
     var CK='<svg viewBox="0 0 28 28" width="26" height="26" style="flex:0 0 auto"><circle cx="14" cy="14" r="13" fill="#e7f7ee"/><path d="M9 14 L12.5 17.5 L20 10" stroke="#16a34a" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     var rulesImg=safeImg(nl.rules_image||nl.rules_comic_image);
-    // 코드 SVG 4컷: rules_image(래스터·NotebookLM 손그림·수동)가 없고 comic.panels가 있으면 코드 만화로 렌더(백엔드 자동·한글 정확)
-    var codePanels=(!rulesImg && nl.comic && Object.prototype.toString.call(nl.comic.panels)==="[object Array]" && nl.comic.panels.length) ? nl.comic.panels.slice(0,4) : null;
-    var hasVisual=!!rulesImg || !!codePanels;
+    // 웹툰 하이브리드: nl.webtoon.image = 글자 없는 Nano Banana 작화. 코드로 ①②③④ 배지 + 정확 한글 캡션을 얹는다(이미지 모델 한글 한계 회피).
+    var wt=nl.webtoon, wtImg=(wt && safeImg(wt.image))||"";
+    // 코드 SVG 4컷: 위 두 시각물이 없고 comic.panels가 있으면 코드 만화(백엔드 자동·한글 정확)
+    var codePanels=(!rulesImg && !wtImg && nl.comic && Object.prototype.toString.call(nl.comic.panels)==="[object Array]" && nl.comic.panels.length) ? nl.comic.panels.slice(0,4) : null;
+    var hasVisual=!!wtImg || !!rulesImg || !!codePanels;
     var capHTML=nl.rules_image_caption?'<div style="font-size:11px;color:#9aa3b2;text-align:center;margin-top:5px">'+esc(nl.rules_image_caption)+"</div>":"";
-    // 보안수칙 시각물: 1순위 rules_image(손그림), 없으면 comic.panels(코드 SVG 4컷)
-    var rulesComic = rulesImg
-      ? '<div style="margin-bottom:12px"><img src="'+escAttr(rulesImg)+'" alt="보안수칙 만화" style="width:100%;max-width:100%;height:auto;display:block;border-radius:12px;border:1px solid #eef1f6"/>'+capHTML+"</div>"
-      : (codePanels ? '<div style="margin-bottom:12px"><div style="display:flex;flex-wrap:wrap;gap:14px">'+codePanels.map(function(p,k){return comicPanelCard(p,k);}).join("")+"</div>"+capHTML+"</div>" : "");
+    function buildWebtoon(img, caps){
+      var circ=["①","②","③","④"], pos=[["1.5%","1.5%"],["50.5%","1.5%"],["1.5%","50.5%"],["50.5%","50.5%"]];
+      caps=(caps||[]).slice(0,4);
+      var badges=caps.map(function(c,i){return '<div style="position:absolute;left:'+pos[i][0]+';top:'+pos[i][1]+';width:24px;height:24px;border-radius:50%;background:#0a2a5c;color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.35)">'+circ[i]+"</div>";}).join("");
+      var imgBox='<div style="position:relative;line-height:0"><img src="'+escAttr(img)+'" alt="보안수칙 웹툰" style="width:100%;max-width:100%;height:auto;display:block;border-radius:12px;border:1px solid #eef1f6"/>'+badges+"</div>";
+      var capCards=caps.length?'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">'+caps.map(function(c,i){return '<div style="flex:1 1 calc(50% - 4px);min-width:200px;display:flex;align-items:center;gap:8px;background:#fafbfd;border:1px solid #eef1f6;border-radius:10px;padding:9px 11px"><span style="flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:#1a56db;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">'+circ[i]+'</span><span style="font-size:12.5px;font-weight:600;line-height:1.4;color:#0a2a5c">'+esc(c)+"</span></div>";}).join("")+"</div>":"";
+      return '<div style="margin-bottom:12px">'+imgBox+capCards+capHTML+"</div>";
+    }
+    // 보안수칙 시각물 우선순위: 웹툰(작화+코드캡션) > rules_image(손그림) > comic.panels(코드 SVG)
+    var rulesComic = wtImg
+      ? buildWebtoon(wtImg, (wt.captions && wt.captions.length ? wt.captions : tips))
+      : (rulesImg
+        ? '<div style="margin-bottom:12px"><img src="'+escAttr(rulesImg)+'" alt="보안수칙 만화" style="width:100%;max-width:100%;height:auto;display:block;border-radius:12px;border:1px solid #eef1f6"/>'+capHTML+"</div>"
+        : (codePanels ? '<div style="margin-bottom:12px"><div style="display:flex;flex-wrap:wrap;gap:14px">'+codePanels.map(function(p,k){return comicPanelCard(p,k);}).join("")+"</div>"+capHTML+"</div>" : ""));
     // 텍스트 보안수칙: 모든 내용 유지. 시각물이 있으면 보조로 축소 표시.
     var tipItems=tips.length?'<div style="flex:2 1 280px;min-width:260px">'+(hasVisual?'<div style="font-size:11px;font-weight:700;color:#9aa3b2;margin-bottom:6px">텍스트 보안수칙</div>':"")+tips.slice(0,5).map(function(t){return '<div style="display:flex;align-items:flex-start;gap:'+(hasVisual?"8px":"10px")+';margin-bottom:'+(hasVisual?"6px":"8px")+'"><div style="flex:0 0 auto;transform:scale('+(hasVisual?"0.78":"1")+');transform-origin:left top">'+CK+'</div><div style="font-size:'+(hasVisual?"11.5":"12.5")+'px;line-height:1.45;color:'+(hasVisual?"#6b7280":"#1f2937")+'">'+esc(t)+"</div></div>";}).join("")+"</div>":"";
     var actionRow=(rulesComic||dmg||tipItems)?'<div style="padding:14px 26px 8px">'+sec("현장 대응 · 오늘의 보안수칙")+rulesComic+'<div style="display:flex;flex-wrap:wrap;gap:12px">'+dmg+tipItems+"</div></div>":"";
