@@ -134,7 +134,7 @@ const FORMAT_GUIDE: Record<string, string> = {
   card: "수칙 카드/인포그래픽 중심. tips를 또렷한 실천 카드로, stats(숫자)를 인상적으로 제시한다. 문장은 짧게.",
   standard: "표준 뉴스레터. 헤드라인·심층분석·수칙을 충실히 담되 가독성을 우선한다.",
   onepager: "A4 한 장 요약. tips(핵심 수칙)와 한 줄 경고 중심으로 매우 간결하게. 심층분석은 짧게 압축한다.",
-  infographic: "데이터 시각화 인포그래픽. infographic.donut(핵심 비율 %), file_types(악성 첨부 형식 %), note(다크웹 등 보조 사실), stages(공격 단계 3개·심각도 danger→warn→ok), damage(피해 규모)를 실제 수치로 채운다. tips(행동 수칙)도 간결히. 모든 수치는 소스/웹검색 근거.",
+  infographic: "데이터 시각화 인포그래픽. infographic.donut(핵심 비율 %), file_types(악성 첨부 형식 %), note(다크웹 등 보조 사실), stages(공격 단계 3개·심각도 danger→warn→ok), damage(피해 규모)를 실제 수치로 채운다. tips(행동 수칙)도 간결히. 모든 수치는 소스/웹검색 근거. 또한 보안수칙을 comic.panels로도 반드시 채운다 — 정확히 4컷(상황→압박/함정→피해 위기→확인·신고로 차단), scene/mood는 위협에 맞게, 대사(speech)·캡션(caption)은 짧고 또렷한 한국어 1문장. 이 4컷은 보안수칙 섹션에 코드 만화로 렌더된다.",
 };
 
 function materialContext(material: any, monthLabel: string) {
@@ -173,8 +173,10 @@ Deno.serve(async (req) => {
   let fmt = body.format || (body.current && body.current.format) || "standard";
   if (!ALLOWED_FORMATS.includes(fmt)) fmt = "standard";
 
-  // 배치(save) 모드: 서비스롤로 직접 저장한다. 컨텍스트가 없으면 해당 월 현재 버전을 가져온다.
-  const save = body.save === true;
+  // 저장 모드: publish = add_version(현재 발행) / draft = newsletter_drafts에 스테이징(검토용).
+  // 어느 쪽이든 service_role로 동작. 컨텍스트가 없으면 해당 월 현재 버전을 가져온다.
+  const saveMode = body.save === true ? "publish" : (body.save === "draft" ? "draft" : null);
+  const save = !!saveMode;
   const supa = save ? createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!) : null;
   if (save && supa && !body.material) {
     const { data: m } = await supa.from("materials").select("id, current_version_id").eq("month", month).maybeSingle();
@@ -211,7 +213,10 @@ Deno.serve(async (req) => {
   // 요청 포맷이 comic이면 comic 데이터를 필수로 강제한다
   const schema = JSON.parse(JSON.stringify(SCHEMA));
   if (fmt === "comic" && !schema.required.includes("comic")) schema.required.push("comic");
-  if (fmt === "infographic" && !schema.required.includes("infographic")) schema.required.push("infographic");
+  if (fmt === "infographic") {
+    if (!schema.required.includes("infographic")) schema.required.push("infographic");
+    if (!schema.required.includes("comic")) schema.required.push("comic"); // 하이브리드: 보안수칙 코드 SVG 4컷
+  }
 
   try {
     const client = new Anthropic({ apiKey });
@@ -228,9 +233,22 @@ Deno.serve(async (req) => {
     const newsletter = JSON.parse(textBlock.text);
     newsletter.format = fmt; // 모델이 빠뜨려도 요청 포맷으로 고정
 
-    // 배치(save) 모드: 새 버전으로 저장(없으면 자료 생성)
+    // 저장 모드
     if (save && supa) {
       const title = newsletter.subject || `${Number(mm)}월 정보보호의 날`;
+
+      // draft 모드: versions/current_version_id를 건드리지 않고 검토용 초안만 스테이징.
+      // 공개 페이지에 노출되지 않으며, 관리자가 검토 후 불러와 발행한다.
+      if (saveMode === "draft") {
+        const { error: de } = await supa.from("newsletter_drafts").upsert(
+          { month, newsletter, format: fmt, source: "cron", note: `자동 초안(${fmt})` },
+          { onConflict: "month" },
+        );
+        if (de) return json({ error: `초안 저장 실패: ${de.message}` }, 502);
+        return json({ ok: true, month, draft: true, format: fmt, subject: newsletter.subject });
+      }
+
+      // publish 모드: 새 버전으로 저장(없으면 자료 생성) → 현재 발행
       const { data: mat } = await supa.from("materials").select("id, current_version_id").eq("month", month).maybeSingle();
       if (mat?.id) {
         const { data: cur } = await supa.from("versions").select("*").eq("id", mat.current_version_id).single();

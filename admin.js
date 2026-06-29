@@ -582,6 +582,40 @@ function renderNewsletter() {
   $("#nl-preview").innerHTML = showNl
     ? renderNewsletterHTML(showNl)
     : `<div class="empty">아직 뉴스레터가 없습니다. 포맷을 고르고 ‘AI 자동 생성’으로 시작하세요.</div>`;
+
+  refreshAutoDraftHint();
+}
+
+/* 백엔드(월간 cron)가 만든 자동 초안이 있으면 버튼에 점(●)으로 표시 */
+async function refreshAutoDraftHint() {
+  const dot = $("#nl-autodraft-dot");
+  if (!dot || !current) return;
+  try {
+    const { data } = await sb.from("newsletter_drafts").select("created_at").eq("month", current.month).maybeSingle();
+    dot.hidden = !data;
+  } catch (e) { /* 테이블 미배포 등은 조용히 무시 */ }
+}
+
+/* 자동 초안 불러오기 — newsletter_drafts(이번 달) → 작업 초안(nlDraft)으로 로드. 저장 시 새 버전으로 발행. */
+async function loadAutoDraft() {
+  if (!current) return;
+  try {
+    const { data, error } = await sb
+      .from("newsletter_drafts")
+      .select("newsletter, format, created_at, note")
+      .eq("month", current.month)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) { toast("이번 달 자동 초안이 없습니다.", true); return; }
+    nlDraft = data.newsletter;
+    nlDraftSource = "ai";
+    const fs = $("#nl-format");
+    if (fs && data.format) fs.value = data.format;
+    renderNewsletter();
+    toast("🤖 자동 초안을 불러왔습니다. 검토 후 ‘새 버전으로 저장’으로 발행하세요.");
+  } catch (e) {
+    toast(e.message || "자동 초안 불러오기 실패", true);
+  }
 }
 
 // 툴바에서 선택된 포맷 (없으면 standard)
