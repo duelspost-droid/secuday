@@ -672,8 +672,27 @@ function renderOnepager(nl, label){
     var tipItems=tips.length?'<div style="flex:2 1 280px;min-width:260px">'+tips.slice(0,5).map(function(t){return '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">'+CK+'<div style="font-size:12.5px;line-height:1.45">'+esc(t)+"</div></div>";}).join("")+"</div>":"";
     var actionRow=(dmg||tipItems)?'<div style="padding:14px 26px 8px">'+sec("현장 대응 · 오늘의 보안수칙")+'<div style="display:flex;flex-wrap:wrap;gap:12px">'+dmg+tipItems+"</div></div>":"";
 
+    // 주요 사례·뉴스 (headlines) — 기사 내용 포함
+    var hl=(nl.headlines||[]).filter(function(h){return h&&h.title;}), casesRow="";
+    if(hl.length){
+      casesRow='<div style="padding:14px 26px 6px">'+sec("주요 사례 · 뉴스")+'<div style="display:flex;flex-direction:column;gap:8px">'+
+        hl.slice(0,4).map(function(h){
+          return '<div style="display:flex;gap:10px;align-items:flex-start;background:#fafbfd;border:1px solid #eef1f6;border-left:3px solid #1a56db;border-radius:0 10px 10px 0;padding:10px 12px">'+
+            '<span style="font-size:16px;flex:0 0 auto;line-height:1.3">'+esc(h.emoji||"📰")+"</span>"+
+            '<div style="min-width:0"><div style="font-size:13px;font-weight:700;color:#0a2a5c;line-height:1.4">'+esc(h.title)+"</div>"+
+            (h.summary?'<div style="font-size:11.5px;color:#6b7280;line-height:1.5;margin-top:2px">'+esc(h.summary)+"</div>":"")+
+            (h.source?'<div style="font-size:11px;color:#9aa3b2;margin-top:3px">— '+esc(h.source)+"</div>":"")+
+            "</div></div>";
+        }).join("")+"</div></div>";
+    }
+    // 전체 맥락 (deep_dive) — 왜 위험한가/배경 설명 포함
+    var dd=nl.deep_dive, contextRow="";
+    if(dd && (dd.heading||dd.body)){
+      contextRow='<div style="padding:14px 26px 6px">'+sec((dd.emoji?dd.emoji+" ":"")+(dd.heading||"전체 맥락"))+'<div style="background:#f7f9fc;border:1px solid #eef1f6;border-radius:12px;padding:14px 16px;font-size:13px;color:#334155;line-height:1.65">'+mdi(dd.body||"")+"</div></div>";
+    }
+
     var foot='<div style="background:#f4f6fa;color:#8a93a3;font-size:11px;text-align:center;padding:11px;margin-top:8px">secuday.jbax.co.kr · 정보보호팀 — 매월 1일 정보보호의 날</div>';
-    return '<div style="max-width:680px;margin:0 auto;background:#fff;color:#1f2937;border-radius:16px;overflow:hidden;border:1px solid #e3e9f2;font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',\'Noto Sans KR\',-apple-system,sans-serif">'+head+threatRow+stageRow+actionRow+foot+"</div>";
+    return '<div style="max-width:680px;margin:0 auto;background:#fff;color:#1f2937;border-radius:16px;overflow:hidden;border:1px solid #e3e9f2;font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',\'Noto Sans KR\',-apple-system,sans-serif">'+head+threatRow+stageRow+casesRow+contextRow+actionRow+foot+"</div>";
   }
 
   /* 포맷 디스패처: nl.format → 해당 렌더러(함수 없으면 표준형으로 안전 폴백) */
