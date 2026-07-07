@@ -13,3 +13,6 @@ verify_jwt = true   # 관리자/cron은 JWT 또는 service_role로 호출
 
 [functions.generate-newsletter]
 verify_jwt = true   # 로그인한 임직원만 호출 가능
+
+[functions.generate-webtoon]
+verify_jwt = true   # 관리자(JWT)/cron(service_role)만 호출. 시크릿 GEMINI_API_KEY 필요
